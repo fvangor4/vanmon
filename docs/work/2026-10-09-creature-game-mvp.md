@@ -101,11 +101,11 @@ rigor:
       jsdom 30.1.1. Node v26.11.1 via Homebrew. vite-plugin-pwa: check vite 8 peer at task 17.
 
 ## Tasks
-- [~] 1. Scaffold: install Node, git init, Vite + TS + Phaser + Vitest, landscape
+- [x] 1. Scaffold: install Node, git init, Vite + TS + Phaser + Vitest, landscape
       FIT config (1024×768 logical), Boot scene showing "VanMon", smoke test.
       files: package.json, tsconfig.json, vite.config.ts, index.html, src/main.ts,
              src/scenes/BootScene.ts, src/logic/smoke.test.ts, .gitignore
-      commits: [259bd4c]
+      commits: [259bd4c, 91c3b46]
 - [ ] 2. Creature + move data model, JSON validation, create-instance-at-level;
       6 mock creatures in JSON.
       files: src/logic/creatures.ts, src/logic/creatures.test.ts, public/data/creatures.json
@@ -156,3 +156,5 @@ rigor:
   tested `src/logic/` modules; rendering itself is verified in the browser pane.
 - 2026-10-09: approved by human (rigor unchanged: per-task spec+code). base = 64a3c77 (initial commit holding this plan).
 - task 1: implemented. Added src/config.ts (logical size constants, so the smoke test has a pure module to import) and .claude/launch.json (dev server for browser pane) beyond the named files. Browser pane at 1180×820 renders "VanMon", no console errors; build green.
+- task 1 review: spec findings (extra files config.ts + launch.json; unused jsdom; smoke test overclaims) and code findings (tautological smoke test; `vite preview` base mismatch; launch.json port not strict; jsdom dead dep; iOS ignores user-scalable=no). Fixed in 91c3b46: base keyed on mode (preview now serves /vanmon/assets JS as text/javascript, verified with curl), `--strictPort`, jsdom removed, touch-action on canvas + gesturestart preventDefault.
+- task 1 disagreement: smoke test deleted rather than strengthened — Phaser can't load under Node, so FIT config / Boot text are verified in the browser pane (screenshot showed "VanMon", no console errors). Extra files config.ts and launch.json kept (justified above). Re-review skipped (rereview=on-nontrivial; fixes mechanical).
