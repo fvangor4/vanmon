@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createCreature, statsAtLevel, type Creature, type CreatureData } from './creatures';
 import { newGame, type GameState } from './gameState';
-import { loadGame, readBackups, requestPersistentStorage, SAVE_KEY, SAVE_VERSION, saveGame, type KeyValueStore } from './save';
+import { BACKUP_KEY, loadGame, readBackups, requestPersistentStorage, SAVE_KEY, SAVE_VERSION, saveGame, type KeyValueStore } from './save';
 import { PARTY_MAX } from './gameState';
-import { START } from '../data/maps';
+import { MAPS, START } from '../data/maps';
 import { LEVEL_CAP, xpToNextLevel } from './xp';
 
 const data: CreatureData = {
@@ -65,26 +65,57 @@ describe('save and load', () => {
 });
 
 describe('damaged saves start fresh and keep the bad data in a backup', () => {
-  for (const [label, raw] of [
-    ['not JSON', '{oops'],
-    ['newer version', JSON.stringify({ version: SAVE_VERSION + 1, state: {} })],
-    ['nonsense version', JSON.stringify({ version: 'one', state: {} })],
-    ['older version with no upgrade path', JSON.stringify({ version: 0, state: {} })],
-    ['missing state', JSON.stringify({ version: SAVE_VERSION })],
-    ['party not a list', JSON.stringify({ version: SAVE_VERSION, state: { party: 'x', box: [], book: {}, position: START } })],
-    ['JSON null', 'null'],
-    ['JSON array', '[]'],
-    ['JSON string', '"save"'],
-    ['JSON number', '5'],
+  for (const [label, raw, problem] of [
+    ['not JSON', '{oops', 'save is not valid JSON'],
+    ['nonsense version', JSON.stringify({ version: 'one', state: {} }), 'unknown save version one'],
+    ['version 0', JSON.stringify({ version: 0, state: {} }), 'unknown save version 0'],
+    ['missing state', JSON.stringify({ version: SAVE_VERSION }), 'save has no party'],
+    ['party not a list', JSON.stringify({ version: SAVE_VERSION, state: { party: 'x', box: [], book: {}, position: START } }), 'save has no party'],
+    ['JSON null', 'null', 'save is not an object'],
+    ['JSON array', '[]', 'save is not an object'],
+    ['JSON string', '"save"', 'save is not an object'],
+    ['JSON number', '5', 'save is not an object'],
   ] as const) {
     it(label, () => {
       const store = memoryStore({ [SAVE_KEY]: raw });
-      const result = loadGame(store, data);
-      expect(result.state).toBeNull();
-      expect(result.problem).toBeTruthy();
+      expect(loadGame(store, data)).toEqual({ state: null, problem });
       expect(readBackups(store).at(-1)!.raw).toBe(raw);
     });
   }
+
+  it('a save from a newer game is backed up and protected from being saved over', () => {
+    const raw = JSON.stringify({ version: SAVE_VERSION + 1, state: {} });
+    const store = memoryStore({ [SAVE_KEY]: raw });
+    expect(loadGame(store, data)).toEqual({ state: null, problem: `save is from a newer version (${SAVE_VERSION + 1})`, protectSave: true });
+    expect(readBackups(store).at(-1)!.raw).toBe(raw);
+  });
+
+  it('upgrades older saves step by step through the migrations', () => {
+    const store = memoryStore();
+    saveGame(store, game()); // written as version 1
+    const migrations = { 1: (st: any) => ({ ...st, position: { map: 'route', x: 5, y: 5 } }) };
+    const { state } = loadGame(store, data, { version: 2, migrations });
+    expect(state!.position).toEqual({ map: 'route', x: 5, y: 5 });
+    expect(state!.party).toHaveLength(2);
+  });
+
+  it('an older save with no upgrade step, or an upgrade that crashes, starts fresh with a backup', () => {
+    const store = memoryStore();
+    saveGame(store, game());
+    expect(loadGame(store, data, { version: 2, migrations: {} })).toEqual({ state: null, problem: 'no way to upgrade a version 1 save' });
+    const boom = { 1: () => { throw new Error('bad old data'); } };
+    expect(loadGame(store, data, { version: 2, migrations: boom })).toEqual({ state: null, problem: 'could not load save: Error: bad old data' });
+    expect(readBackups(store)).toHaveLength(2);
+  });
+
+  it('a broken map in an update sends you to the start but keeps your creatures', () => {
+    const store = memoryStore();
+    saveGame(store, { ...game(), position: { map: 'route', x: 5, y: 5 } });
+    const broken = { ...MAPS, route: { ...MAPS.route, rows: [] } };
+    const { state } = loadGame(store, data, { maps: broken });
+    expect(state!.position).toEqual(START);
+    expect(state!.party).toHaveLength(2);
+  });
 
   it('never crashes on a position naming a built-in object key', () => {
     for (const map of ['constructor', '__proto__', 'toString', 'hasOwnProperty']) {
@@ -103,6 +134,24 @@ describe('damaged saves start fresh and keep the bad data in a backup', () => {
     loadGame(store, data);
     expect(readBackups(store).map((b) => b.raw)).toContain('{oops');
     expect(readBackups(store)).toHaveLength(2);
+  });
+
+  it('ignores junk in the backup list rather than losing the new backup', () => {
+    const store = memoryStore({ [SAVE_KEY]: '{oops', [BACKUP_KEY]: JSON.stringify([null, 7, { raw: 'old', problem: 'x', at: '', dropped: [] }]) });
+    loadGame(store, data);
+    expect(readBackups(store).map((b) => b.raw)).toEqual(['old', '{oops']);
+  });
+
+  it('does not repeat the same backup, and keeps only the last 5', () => {
+    const store = memoryStore({ [SAVE_KEY]: '{oops' });
+    loadGame(store, data);
+    loadGame(store, data);
+    expect(readBackups(store)).toHaveLength(1);
+    for (let i = 0; i < 7; i++) {
+      store.items[SAVE_KEY] = `{bad${i}`;
+      loadGame(store, data);
+    }
+    expect(readBackups(store).map((b) => b.raw)).toEqual(['{bad2', '{bad3', '{bad4', '{bad5', '{bad6']);
   });
 
   it('still starts when even the backup cannot be written', () => {
@@ -178,8 +227,8 @@ describe('repairs that keep the game going', () => {
     const store = memoryStore();
     saveGame(store, big);
     const { state } = loadGame(store, data);
-    expect(state!.party).toHaveLength(PARTY_MAX);
-    expect(state!.box).toHaveLength(big.box.length + 2);
+    expect(state!.party.map((c) => c.uid)).toEqual(big.party.slice(0, PARTY_MAX).map((c) => c.uid));
+    expect(state!.box.map((c) => c.uid)).toEqual([...big.party.slice(PARTY_MAX), ...big.box].map((c) => c.uid));
   });
 
   it('treats a missing Box as empty instead of throwing the save away', () => {

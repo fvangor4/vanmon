@@ -19,7 +19,8 @@ const MAX_BACKUPS = 5;
  * Upgrades from older save versions: MIGRATIONS[n] turns a version-n `state`
  * into version n+1. Empty until the save format first changes.
  */
-const MIGRATIONS: Record<number, (state: unknown) => unknown> = {};
+export type Migrations = Record<number, (state: unknown) => unknown>;
+const MIGRATIONS: Migrations = {};
 
 /** The bits of localStorage we use, so tests can pass a fake. */
 export interface KeyValueStore {
@@ -38,6 +39,12 @@ export interface LoadResult {
   state: GameState | null;
   /** Why a save couldn't be used (for the console; kids never see it). */
   problem?: string;
+  /**
+   * The save is from a newer version of the game (an old cached copy is
+   * running). Play a fresh game but don't save over it; a reload with the
+   * updated game will load it normally.
+   */
+  protectSave?: boolean;
 }
 
 /** Returns false (instead of throwing) if the iPad won't store it. */
@@ -66,7 +73,8 @@ export interface BackupEntry {
 export function readBackups(store: KeyValueStore): BackupEntry[] {
   try {
     const list: unknown = JSON.parse(store.getItem(BACKUP_KEY) ?? '[]');
-    return Array.isArray(list) ? (list as BackupEntry[]) : [];
+    if (!Array.isArray(list)) return [];
+    return list.filter((b): b is BackupEntry => isRecord(b) && typeof b.raw === 'string' && typeof b.problem === 'string');
   } catch {
     return [];
   }
@@ -112,7 +120,12 @@ function repairCreature(raw: unknown, species: Map<string, SpeciesDef>, seenUids
 function repairPosition(raw: unknown, maps: Record<string, MapDef>): Position {
   if (isRecord(raw) && typeof raw.map === 'string' && Object.hasOwn(maps, raw.map)) {
     const { x, y } = raw;
-    const map = parseMap(maps[raw.map]);
+    let map;
+    try {
+      map = parseMap(maps[raw.map]);
+    } catch {
+      return { ...START }; // a broken map shipped in an update shouldn't cost anyone their creatures
+    }
     // isWalkable is false for fractional coordinates (no such tile). Never
     // resume standing on an exit, or loading would bounce you to another map.
     if (typeof x === 'number' && typeof y === 'number' && map.isWalkable(x, y) && !map.warpAt(x, y)) {
@@ -122,11 +135,15 @@ function repairPosition(raw: unknown, maps: Record<string, MapDef>): Position {
   return { ...START };
 }
 
-export function loadGame(
-  store: KeyValueStore,
-  data: CreatureData,
-  maps: Record<string, MapDef> = MAPS,
-): LoadResult {
+export interface LoadOptions {
+  maps?: Record<string, MapDef>;
+  /** For tests: pretend the game's save version and upgrades are these. */
+  version?: number;
+  migrations?: Migrations;
+}
+
+export function loadGame(store: KeyValueStore, data: CreatureData, opts: LoadOptions = {}): LoadResult {
+  const { maps = MAPS, version: currentVersion = SAVE_VERSION, migrations = MIGRATIONS } = opts;
   let raw: string | null;
   try {
     raw = store.getItem(SAVE_KEY);
@@ -152,22 +169,21 @@ export function loadGame(
   if (typeof version !== 'number' || !Number.isInteger(version) || version < 1) {
     return fail(`unknown save version ${String(version)}`);
   }
-  if (version > SAVE_VERSION) {
-    // From a newer version of the game (e.g. an old cached copy running). Kept in the backup.
-    return fail(`save is from a newer version (${version})`);
-  }
-  while (version < SAVE_VERSION) {
-    const migrate = MIGRATIONS[version];
-    if (!migrate) return fail(`no way to upgrade a version ${version} save`);
-    s = migrate(s);
-    version++;
+  if (version > currentVersion) {
+    return { ...fail(`save is from a newer version (${version})`), protectSave: true };
   }
 
   try {
+    while (version < currentVersion) {
+      const migrate = migrations[version];
+      if (!migrate) return fail(`no way to upgrade a version ${version} save`);
+      s = migrate(s);
+      version++;
+    }
     return repairState(store, raw, s, data, maps, fail);
   } catch (err) {
     // Last resort: a save must never crash the game.
-    return fail(`could not repair save: ${String(err)}`);
+    return fail(`could not load save: ${String(err)}`);
   }
 }
 
