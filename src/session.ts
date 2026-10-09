@@ -4,7 +4,7 @@
 import type { CreatureData, SpeciesDef } from './logic/creatures';
 import type { Rng } from './logic/damage';
 import type { GameState } from './logic/gameState';
-import { saveGame } from './logic/save';
+import { saveGame, type KeyValueStore } from './logic/save';
 
 export class Session {
   /** Tall-grass steps since the last battle (not saved; 0 after a reload). */
@@ -16,6 +16,7 @@ export class Session {
   constructor(
     readonly data: CreatureData,
     public state: GameState,
+    private readonly store: KeyValueStore,
     readonly rng: Rng = Math.random,
   ) {
     this.species = new Map(data.species.map((s) => [s.id, s]));
@@ -29,7 +30,7 @@ export class Session {
 
   save(): void {
     if (!this.canSave) return;
-    if (!saveGame(localStorage, this.state)) console.warn('VanMon: could not save (storage full or blocked)');
+    if (!saveGame(this.store, this.state)) console.warn('VanMon: could not save (storage full or blocked)');
   }
 }
 

@@ -2,7 +2,6 @@
 // step on the home door to heal, walk off the edge to change area.
 
 import Phaser from 'phaser';
-import { GAME_WIDTH } from '../config';
 import { createCreature, type Creature } from '../logic/creatures';
 import { rollEncounter, speciesForArea } from '../logic/encounters';
 import { healAll, markSeen } from '../logic/gameState';
@@ -24,6 +23,8 @@ export class OverworldScene extends Phaser.Scene {
   private player!: Phaser.GameObjects.Image;
   private dialog!: DialogBox;
   private path: Point[] = [];
+  /** The tile the current step is heading to (null when standing still). */
+  private stepTarget: Point | null = null;
   private walking = false;
   private busy = false;
 
@@ -35,6 +36,7 @@ export class OverworldScene extends Phaser.Scene {
     const s = session();
     this.map = parseMap(MAPS[s.state.position.map]);
     this.path = [];
+    this.stepTarget = null;
     this.walking = false;
     this.busy = false;
     this.drawMap();
@@ -78,12 +80,12 @@ export class OverworldScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(500);
     this.tweens.add({ targets: label, alpha: 0.85, delay: 2500, duration: 600 });
-    void GAME_WIDTH;
   }
 
   private walkTo(tapped: Point): void {
-    const here = session().state.position;
-    this.path = findPath(this.map, here, tapped);
+    // Mid-step, plan from where this step lands so the new route joins up smoothly.
+    const from = this.stepTarget ?? session().state.position;
+    this.path = findPath(this.map, from, tapped);
     if (this.path.length === 0) return;
     const end = this.path[this.path.length - 1];
     const marker = this.add.circle(end.x * TILE + TILE / 2, end.y * TILE + TILE / 2, 14, COLORS.sunny).setDepth(5);
@@ -95,9 +97,12 @@ export class OverworldScene extends Phaser.Scene {
     const step = this.path.shift();
     if (!step || this.busy) {
       this.walking = false;
+      this.stepTarget = null;
+      if (!this.busy) session().save(); // stopped walking: remember where we are
       return;
     }
     this.walking = true;
+    this.stepTarget = step;
     const pos = session().state.position;
     if (step.x !== pos.x) this.player.setFlipX(step.x < pos.x);
     this.tweens.add({
@@ -120,6 +125,7 @@ export class OverworldScene extends Phaser.Scene {
     const warp = this.map.warpAt(at.x, at.y);
     if (warp) {
       this.stop();
+      this.busy = true; // no taps during the fade; the scene restarts on the new map
       s.state = { ...s.state, position: { map: warp.to, x: warp.toX, y: warp.toY } };
       s.save();
       this.cameras.main.fadeOut(250);
@@ -137,7 +143,6 @@ export class OverworldScene extends Phaser.Scene {
     }
 
     if (this.map.tileAt(at.x, at.y) === 'tallGrass') this.grassStep();
-    s.save();
   }
 
   private grassStep(): void {
@@ -151,6 +156,7 @@ export class OverworldScene extends Phaser.Scene {
     s.stepsSinceBattle = 0;
     const species = s.speciesById(met.speciesId);
     s.state = markSeen(s.state, species.id);
+    s.save();
     const launch: BattleLaunch = { wild: createCreature(species, met.level) };
     this.busy = true;
     this.cameras.main.flash(300, 255, 255, 255);

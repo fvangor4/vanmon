@@ -98,15 +98,17 @@ describe('validateAreas', () => {
 
   it('rejects bad chances, bad level ranges, unknown maps, and species areas that do not exist', () => {
     const routeOnly = { ...data, species: [data.species[0], data.species[2]] }; // nothing needs "pond"
-    expect(() => validateAreas({ route }, routeOnly, MAPS)).not.toThrow();
+    const routeMaps = { town: MAPS.town, route: MAPS.route };
+    expect(() => validateAreas({ route }, routeOnly, routeMaps)).not.toThrow();
     for (const chance of [0, 1.5, Number.NaN]) {
-      expect(() => validateAreas({ route: { ...route, chance } }, routeOnly, MAPS), `chance ${chance}`).toThrow(/chance/);
+      expect(() => validateAreas({ route: { ...route, chance } }, routeOnly, routeMaps), `chance ${chance}`).toThrow(/chance/);
     }
     for (const [minLevel, maxLevel] of [[5, 3], [0, 3], [2.5, 3], [2, LEVEL_CAP + 1]]) {
-      expect(() => validateAreas({ route: { ...route, minLevel, maxLevel } }, routeOnly, MAPS), `${minLevel}-${maxLevel}`).toThrow(/level/);
+      expect(() => validateAreas({ route: { ...route, minLevel, maxLevel } }, routeOnly, routeMaps), `${minLevel}-${maxLevel}`).toThrow(/level/);
     }
-    expect(() => validateAreas({ route, moon: route }, routeOnly, MAPS)).toThrow(/moon/);
+    expect(() => validateAreas({ route, moon: route }, routeOnly, routeMaps)).toThrow(/moon/);
+    expect(() => validateAreas({ route }, routeOnly, { ...routeMaps, meadow: { ...MAPS.route, id: 'meadow' } })).toThrow(/meadow.*tall grass/);
     const typo = { ...data, species: [{ ...data.species[0], areas: ['rout'] }] };
-    expect(() => validateAreas({ route }, typo, MAPS)).toThrow(/rout/);
+    expect(() => validateAreas({ route }, typo, routeMaps)).toThrow(/rout/);
   });
 });

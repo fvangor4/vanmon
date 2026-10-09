@@ -29,6 +29,26 @@ export interface KeyValueStore {
   removeItem(key: string): void;
 }
 
+/**
+ * The browser's localStorage, or an in-memory stand-in when Safari blocks it
+ * (just touching window.localStorage can throw). The game still plays; it
+ * just can't remember progress.
+ */
+export function browserStore(get: () => KeyValueStore = () => localStorage): KeyValueStore {
+  try {
+    const store = get();
+    if (store) return store;
+  } catch {
+    // fall through to memory
+  }
+  const items = new Map<string, string>();
+  return {
+    getItem: (k) => items.get(k) ?? null,
+    setItem: (k, v) => void items.set(k, v),
+    removeItem: (k) => void items.delete(k),
+  };
+}
+
 interface SaveFile {
   version: number;
   savedAt: string;

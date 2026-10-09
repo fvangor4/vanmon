@@ -65,6 +65,9 @@ export function validateAreas(
       Number.isInteger(a.minLevel) && Number.isInteger(a.maxLevel) && a.minLevel >= 1 && a.minLevel <= a.maxLevel && a.maxLevel <= LEVEL_CAP;
     if (!levelsOk) problems.push(`area "${id}": levels must be whole numbers with 1 ≤ min ≤ max ≤ ${LEVEL_CAP}`);
   }
+  for (const [id, map] of Object.entries(maps)) {
+    if (map.rows.some((r) => r.includes('"')) && !areas[id]) problems.push(`map "${id}" has tall grass but no wild creatures area`);
+  }
   for (const s of data.species) {
     for (const a of s.areas ?? []) {
       if (!areas[a]) problems.push(`species "${s.id}" lives in "${a}", which has no wild creatures area`);

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createCreature, statsAtLevel, type Creature, type CreatureData } from './creatures';
 import { newGame, type GameState } from './gameState';
-import { BACKUP_KEY, loadGame, readBackups, requestPersistentStorage, SAVE_KEY, SAVE_VERSION, saveGame, type KeyValueStore } from './save';
+import { BACKUP_KEY, browserStore, loadGame, readBackups, requestPersistentStorage, SAVE_KEY, SAVE_VERSION, saveGame, type KeyValueStore } from './save';
 import { PARTY_MAX } from './gameState';
 import { MAPS, START } from '../data/maps';
 import { LEVEL_CAP, xpToNextLevel } from './xp';
@@ -310,6 +310,20 @@ describe('storage that misbehaves (private browsing, full disk)', () => {
   it('reports a failed save instead of crashing', () => {
     const store: KeyValueStore = { getItem: () => null, setItem: () => { throw new Error('QuotaExceededError'); }, removeItem: () => {} };
     expect(saveGame(store, game())).toBe(false);
+  });
+});
+
+describe('browserStore', () => {
+  it('uses the real storage when it is reachable', () => {
+    const real = memoryStore();
+    expect(browserStore(() => real)).toBe(real);
+  });
+
+  it('falls back to memory when touching storage throws (Safari with storage blocked)', () => {
+    const store = browserStore(() => { throw new Error('SecurityError'); });
+    const g = game();
+    expect(saveGame(store, g)).toBe(true);
+    expect(loadGame(store, data).state).toEqual(g);
   });
 });
 
