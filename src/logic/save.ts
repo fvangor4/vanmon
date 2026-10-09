@@ -4,7 +4,7 @@
 // creatures.json are repaired to match the current creatures.
 
 import { MAX_LEVEL, newUid, statsAtLevel, type Creature, type CreatureData, type SpeciesDef } from './creatures';
-import type { BookEntry, GameState, Position } from './gameState';
+import { PARTY_MAX, type BookEntry, type GameState, type Position } from './gameState';
 import { parseMap, type MapDef } from './map';
 import { LEVEL_CAP, xpToNextLevel } from './xp';
 import { MAPS, START } from '../data/maps';
@@ -12,6 +12,14 @@ import { MAPS, START } from '../data/maps';
 export const SAVE_KEY = 'vanmon.save';
 export const BACKUP_KEY = 'vanmon.save.backup';
 export const SAVE_VERSION = 1;
+/** How many past problem saves to keep in BACKUP_KEY. */
+const MAX_BACKUPS = 5;
+
+/**
+ * Upgrades from older save versions: MIGRATIONS[n] turns a version-n `state`
+ * into version n+1. Empty until the save format first changes.
+ */
+const MIGRATIONS: Record<number, (state: unknown) => unknown> = {};
 
 /** The bits of localStorage we use, so tests can pass a fake. */
 export interface KeyValueStore {
@@ -47,11 +55,31 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
 
+export interface BackupEntry {
+  at: string;
+  problem: string;
+  raw: string;
+  dropped: unknown[];
+}
+
+/** Past problem saves, newest last. */
+export function readBackups(store: KeyValueStore): BackupEntry[] {
+  try {
+    const list: unknown = JSON.parse(store.getItem(BACKUP_KEY) ?? '[]');
+    return Array.isArray(list) ? (list as BackupEntry[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 function backup(store: KeyValueStore, raw: string, problem: string, dropped: unknown[] = []): void {
   try {
-    store.setItem(BACKUP_KEY, JSON.stringify({ at: new Date().toISOString(), problem, raw, dropped }));
+    // Keep a short history so a later problem never erases an earlier one.
+    const list = readBackups(store).filter((b) => b.raw !== raw || b.problem !== problem);
+    list.push({ at: new Date().toISOString(), problem, raw, dropped });
+    store.setItem(BACKUP_KEY, JSON.stringify(list.slice(-MAX_BACKUPS)));
   } catch {
-    // Nowhere left to keep it; the game still starts.
+    // Storage is full or blocked: nowhere to keep it, but the game still starts.
   }
 }
 
@@ -59,10 +87,11 @@ function backup(store: KeyValueStore, raw: string, problem: string, dropped: unk
 function repairCreature(raw: unknown, species: Map<string, SpeciesDef>, seenUids: Set<string>): Creature | null {
   if (!isRecord(raw)) return null;
   const sp = species.get(raw.speciesId as string);
-  const level = raw.level;
-  if (!sp || typeof level !== 'number' || !Number.isInteger(level) || level < 1 || level > Math.min(LEVEL_CAP, MAX_LEVEL)) {
+  if (!sp || typeof raw.level !== 'number' || !Number.isInteger(raw.level) || raw.level < 1 || raw.level > MAX_LEVEL) {
     return null;
   }
+  // Above this version's cap (e.g. the cap was lowered): keep the creature, at the cap.
+  const level = Math.min(raw.level, LEVEL_CAP);
   const stats = statsAtLevel(sp.baseStats, level);
   const maxXp = level >= LEVEL_CAP ? 0 : xpToNextLevel(level) - 1;
   const xp = typeof raw.xp === 'number' && Number.isFinite(raw.xp) ? Math.round(raw.xp) : 0;
@@ -81,10 +110,12 @@ function repairCreature(raw: unknown, species: Map<string, SpeciesDef>, seenUids
 }
 
 function repairPosition(raw: unknown, maps: Record<string, MapDef>): Position {
-  if (isRecord(raw) && typeof raw.map === 'string' && maps[raw.map]) {
+  if (isRecord(raw) && typeof raw.map === 'string' && Object.hasOwn(maps, raw.map)) {
     const { x, y } = raw;
-    if (typeof x === 'number' && typeof y === 'number' && parseMap(maps[raw.map]).isWalkable(x, y)) {
-      // isWalkable is false for fractional coordinates (no such tile).
+    const map = parseMap(maps[raw.map]);
+    // isWalkable is false for fractional coordinates (no such tile). Never
+    // resume standing on an exit, or loading would bounce you to another map.
+    if (typeof x === 'number' && typeof y === 'number' && map.isWalkable(x, y) && !map.warpAt(x, y)) {
       return { map: raw.map, x, y };
     }
   }
@@ -116,9 +147,39 @@ export function loadGame(
     return fail('save is not valid JSON');
   }
   if (!isRecord(file)) return fail('save is not an object');
-  if (file.version !== SAVE_VERSION) return fail(`unknown save version ${String(file.version)}`);
-  const s = file.state;
-  if (!isRecord(s) || !Array.isArray(s.party) || !Array.isArray(s.box)) return fail('save has no party/box');
+  let version = file.version;
+  let s = file.state;
+  if (typeof version !== 'number' || !Number.isInteger(version) || version < 1) {
+    return fail(`unknown save version ${String(version)}`);
+  }
+  if (version > SAVE_VERSION) {
+    // From a newer version of the game (e.g. an old cached copy running). Kept in the backup.
+    return fail(`save is from a newer version (${version})`);
+  }
+  while (version < SAVE_VERSION) {
+    const migrate = MIGRATIONS[version];
+    if (!migrate) return fail(`no way to upgrade a version ${version} save`);
+    s = migrate(s);
+    version++;
+  }
+
+  try {
+    return repairState(store, raw, s, data, maps, fail);
+  } catch (err) {
+    // Last resort: a save must never crash the game.
+    return fail(`could not repair save: ${String(err)}`);
+  }
+}
+
+function repairState(
+  store: KeyValueStore,
+  raw: string,
+  s: unknown,
+  data: CreatureData,
+  maps: Record<string, MapDef>,
+  fail: (problem: string, dropped?: unknown[]) => LoadResult,
+): LoadResult {
+  if (!isRecord(s) || !Array.isArray(s.party)) return fail('save has no party');
 
   const species = new Map(data.species.map((sp) => [sp.id, sp]));
   const seenUids = new Set<string>();
@@ -130,8 +191,9 @@ export function loadGame(
       return fixed ? [fixed] : [];
     });
   const party = keep(s.party);
-  const box = keep(s.box);
+  const box = keep(Array.isArray(s.box) ? s.box : []);
   if (party.length === 0 && box.length > 0) party.push(box.shift()!);
+  if (party.length > PARTY_MAX) box.unshift(...party.splice(PARTY_MAX));
   if (party.length === 0) return fail('no creatures left after repair', dropped);
 
   const book: Record<string, BookEntry> = {};
