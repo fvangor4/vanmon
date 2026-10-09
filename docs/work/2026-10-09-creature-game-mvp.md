@@ -106,9 +106,10 @@ rigor:
       files: package.json, tsconfig.json, vite.config.ts, index.html, src/main.ts,
              src/scenes/BootScene.ts, src/logic/smoke.test.ts, .gitignore
       commits: [259bd4c, 91c3b46]
-- [ ] 2. Creature + move data model, JSON validation, create-instance-at-level;
+- [~] 2. Creature + move data model, JSON validation, create-instance-at-level;
       6 mock creatures in JSON.
       files: src/logic/creatures.ts, src/logic/creatures.test.ts, public/data/creatures.json
+      commits: [1d48593]
 - [ ] 3. Mock creature art: 6 cute SVG blobs colored by type.
       files: public/creatures/*.svg
 - [ ] 4. Type chart + damage formula (injectable RNG).
@@ -158,3 +159,4 @@ rigor:
 - task 1: implemented. Added src/config.ts (logical size constants, so the smoke test has a pure module to import) and .claude/launch.json (dev server for browser pane) beyond the named files. Browser pane at 1180×820 renders "VanMon", no console errors; build green.
 - task 1 review: spec findings (extra files config.ts + launch.json; unused jsdom; smoke test overclaims) and code findings (tautological smoke test; `vite preview` base mismatch; launch.json port not strict; jsdom dead dep; iOS ignores user-scalable=no). Fixed in 91c3b46: base keyed on mode (preview now serves /vanmon/assets JS as text/javascript, verified with curl), `--strictPort`, jsdom removed, touch-action on canvas + gesturestart preventDefault.
 - task 1 disagreement: smoke test deleted rather than strengthened — Phaser can't load under Node, so FIT config / Boot text are verified in the browser pane (screenshot showed "VanMon", no console errors). Extra files config.ts and launch.json kept (justified above). Re-review skipped (rereview=on-nontrivial; fixes mechanical).
+- task 2: implemented; 14 tests pass, typecheck clean. Stat formula: hp=floor(b*L/50)+L+10, atk/def=floor(b*L/50)+5.
