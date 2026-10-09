@@ -134,8 +134,9 @@ rigor:
       Wild creatures deal ×0.6 damage (gentle difficulty; see task 4 log).
       files: src/logic/battle.ts, src/logic/battle.test.ts
       commits: [472b856, 7e60a72]
-- [ ] 6. Catch logic in battle engine: wiggle count, HP-scaled chance, fail → wild turn.
+- [~] 6. Catch logic in battle engine: wiggle count, HP-scaled chance, fail → wild turn.
       files: src/logic/catch.ts, src/logic/catch.test.ts, src/logic/battle.ts
+      commits: [d036573]
 - [x] 7. XP + level-up (stat growth, cap at level 20).
       files: src/logic/xp.ts, src/logic/xp.test.ts
       commits: [9f46e37, 559518f]
@@ -190,3 +191,4 @@ rigor:
 - task 5 review: spec — wild move choice only tested at rng 0.999. code — 8 findings (random pick untested; 0.6 not pinned; Math.min clamp hid bad rng; damage `amount` overshot remaining HP; takeTurn non-mutation untested; loss-after-swap untested; context errors untested; asleep wild accepted). All fixed in 7e60a72 (seq rng helper; amount = HP actually lost; rng outside [0,1) throws; startBattle rejects asleep wild). 20 tests. Re-review skipped (on-nontrivial; fixes mostly tests + 3 small guards).
 - task 7 review: spec pass. code — level/xp from saves unchecked; species mismatch unchecked; above-cap behavior undocumented; level-up not asserted in hp test; curve pinned at one level. Fixed 559518f (RangeErrors; species id check; above-cap unchanged + test; curve loop: 2-3 wins every level). Load-side invariants recorded under Unknowns for task 9. 13 tests.
 - task 10: implemented; 13 tests incl. whole-world checks (every warp lands walkable, has a way back, and is reachable from every arrival point). Town 20×15, route 24×18, pond 20×15; home door (7,4), start (7,5).
+- task 6: implemented (battle.test.ts also touched for catch tests). Chance 60% full HP → 95% near 0; 3 wiggles each pass with chance^(1/3). 30 tests across battle+catch.
