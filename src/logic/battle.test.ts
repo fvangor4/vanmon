@@ -194,7 +194,16 @@ describe('catch', () => {
     const tired = startBattle([mon('firey')], mon('watery', 5, 1));
     const fresh = startBattle([mon('firey')], mon('watery'));
     expect(takeTurn(tired, { kind: 'catch' }, makeBattleContext(data, seq(0.9, 0.9, 0.9))).state.outcome).toBe('caught');
-    expect(takeTurn(fresh, { kind: 'catch' }, makeBattleContext(data, seq(0.9, 0.5, 0.5))).state.outcome).toBeNull();
+    const freshTry = takeTurn(fresh, { kind: 'catch' }, makeBattleContext(data, seq(0.9, 0.5, 0.5)));
+    expect(freshTry.events[0]).toEqual({ kind: 'catch', wiggles: 0, caught: false });
+    expect(freshTry.state.outcome).toBeNull();
+  });
+
+  it('lets you try again after it breaks free', () => {
+    const s = startBattle([mon('firey')], mon('watery'));
+    const first = takeTurn(s, { kind: 'catch' }, makeBattleContext(data, seq(0.99, 0.5, 0.5)));
+    const second = takeTurn(first.state, { kind: 'catch' }, makeBattleContext(data, seq(0, 0, 0)));
+    expect(second.state.outcome).toBe('caught');
   });
 });
 

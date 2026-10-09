@@ -8,6 +8,9 @@ const WIGGLES = 3;
 
 /** 60% at full HP, rising to 95% as HP nears 0. */
 export function catchChance({ hp, maxHp }: { hp: number; maxHp: number }): number {
+  if (!(maxHp > 0) || !(hp >= 0 && hp <= maxHp)) {
+    throw new RangeError(`wild creature HP must be 0..maxHp, got ${hp}/${maxHp}`);
+  }
   return 0.6 + 0.35 * (1 - hp / maxHp);
 }
 

@@ -16,6 +16,12 @@ describe('catchChance', () => {
   it('gets easier as HP drops', () => {
     expect(catchChance({ hp: 5, maxHp: 20 })).toBeGreaterThan(catchChance({ hp: 15, maxHp: 20 }));
   });
+
+  it('refuses impossible HP instead of quietly always (or never) catching', () => {
+    for (const bad of [{ hp: 0, maxHp: 0 }, { hp: Number.NaN, maxHp: 20 }, { hp: 60, maxHp: 20 }, { hp: -1, maxHp: 20 }]) {
+      expect(() => catchChance(bad)).toThrow(RangeError);
+    }
+  });
 });
 
 describe('rollCatch', () => {
@@ -29,9 +35,19 @@ describe('rollCatch', () => {
     expect(rollCatch({ hp: 20, maxHp: 20 }, seq(0.5, 0.5, 0.9))).toEqual({ wiggles: 2, caught: false });
   });
 
+  it('a roll exactly at the per-wiggle odds fails that wiggle', () => {
+    expect(rollCatch({ hp: 20, maxHp: 20 }, seq(Math.cbrt(0.6)))).toEqual({ wiggles: 0, caught: false });
+  });
+
   it('succeeds overall about as often as catchChance says', () => {
-    let state = 12345;
-    const lcg = () => ((state = (state * 1103515245 + 12345) % 2 ** 31) / 2 ** 31);
+    // mulberry32: small, well-known seeded PRNG (32-bit math via Math.imul)
+    let a = 12345;
+    const lcg = () => {
+      a = (a + 0x6d2b79f5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
     let caught = 0;
     const tries = 20000;
     for (let i = 0; i < tries; i++) if (rollCatch({ hp: 20, maxHp: 20 }, lcg).caught) caught++;
