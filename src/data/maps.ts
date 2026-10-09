@@ -2,6 +2,7 @@
 // Legend: . path  , grass  " tall grass (wild creatures!)  F flowers  D door
 //         T tree  ~ water  # house  = fence
 
+import type { AreaEncounters } from '../logic/encounters';
 import type { MapDef, Point } from '../logic/map';
 
 export const MAPS: Record<string, MapDef> = {
@@ -90,3 +91,9 @@ export const MAPS: Record<string, MapDef> = {
 
 /** Where a new game begins: just outside the home door. */
 export const START: Point & { map: string } = { map: 'town', x: 7, y: 5 };
+
+/** Wild creatures in each map's tall grass. Which species live where is in creatures.json ("areas"). */
+export const AREAS: Record<string, AreaEncounters> = {
+  route: { chance: 0.15, minLevel: 2, maxLevel: 4 },
+  pond: { chance: 0.15, minLevel: 3, maxLevel: 5 },
+};

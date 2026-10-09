@@ -17,7 +17,8 @@
       "type": "fire",
       "image": "emberpup.svg",
       "baseStats": { "hp": 50, "attack": 55, "defense": 45 },
-      "moves": ["bump", "spark"]
+      "moves": ["bump", "spark"],
+      "areas": ["route"]
     },
     {
       "id": "toastle",
@@ -25,7 +26,8 @@
       "type": "fire",
       "image": "toastle.svg",
       "baseStats": { "hp": 60, "attack": 45, "defense": 55 },
-      "moves": ["bonk", "flame-dash"]
+      "moves": ["bonk", "flame-dash"],
+      "areas": ["route"]
     },
     {
       "id": "puddlefin",
@@ -33,7 +35,8 @@
       "type": "water",
       "image": "puddlefin.svg",
       "baseStats": { "hp": 55, "attack": 50, "defense": 50 },
-      "moves": ["bump", "splash-shot"]
+      "moves": ["bump", "splash-shot"],
+      "areas": ["pond"]
     },
     {
       "id": "bubbloo",
@@ -41,7 +44,8 @@
       "type": "water",
       "image": "bubbloo.svg",
       "baseStats": { "hp": 65, "attack": 40, "defense": 50 },
-      "moves": ["bonk", "bubble-pop"]
+      "moves": ["bonk", "bubble-pop"],
+      "areas": ["pond"]
     },
     {
       "id": "sproutle",
@@ -49,7 +53,8 @@
       "type": "leaf",
       "image": "sproutle.svg",
       "baseStats": { "hp": 55, "attack": 45, "defense": 55 },
-      "moves": ["bump", "leaf-toss"]
+      "moves": ["bump", "leaf-toss"],
+      "areas": ["route", "pond"]
     },
     {
       "id": "leafbun",
@@ -57,7 +62,8 @@
       "type": "leaf",
       "image": "leafbun.svg",
       "baseStats": { "hp": 45, "attack": 55, "defense": 45 },
-      "moves": ["swipe", "vine-swing"]
+      "moves": ["swipe", "vine-swing"],
+      "areas": ["route"]
     }
   ]
 }

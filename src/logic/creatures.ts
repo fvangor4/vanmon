@@ -31,6 +31,8 @@ export interface SpeciesDef {
   baseStats: BaseStats;
   /** Exactly two move ids: a plain move and a type move. */
   moves: string[];
+  /** Map ids where it lives in the tall grass. Leave out to live everywhere. */
+  areas?: string[];
 }
 
 export interface CreatureData {
@@ -132,6 +134,11 @@ function checkSpecies(
         problems.push(`${label}: baseStats.${stat} must be a whole number from 1 to ${MAX_BASE_STAT}`);
       }
     }
+  }
+
+  if (raw.areas !== undefined) {
+    const ok = Array.isArray(raw.areas) && raw.areas.length > 0 && raw.areas.every((a) => typeof a === 'string' && ID_PATTERN.test(a));
+    if (!ok) problems.push(`${label}: areas must be a list of map ids like ["route", "pond"]`);
   }
 
   if (!Array.isArray(raw.moves) || raw.moves.length !== 2) {

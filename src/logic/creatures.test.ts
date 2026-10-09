@@ -158,6 +158,13 @@ describe('validateCreatureData', () => {
     );
   });
 
+  it('accepts an optional list of areas, and rejects a malformed one', () => {
+    expect(problemsOf(mutated((d) => (d.species[0].areas = ['route', 'pond'])))).toEqual([]);
+    for (const bad of ['route', [], ['Route'], [3]]) {
+      expect(problemsOf(mutated((d) => (d.species[0].areas = bad)))).toContainEqual(expect.stringMatching(/areas must be/));
+    }
+  });
+
   it('requires exactly 2 moves', () => {
     expect(problemsOf(mutated((d) => (d.species[0].moves = ['bump'])))).toContainEqual(
       'species "emberpup": must have exactly 2 moves',
