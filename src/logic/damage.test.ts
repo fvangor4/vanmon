@@ -41,8 +41,6 @@ describe('calcDamage', () => {
     expect(plain).toBe(4);
     expect(typed).toBe(5);
     expect(superHit).toBe(11);
-    expect(Math.ceil(20 / plain)).toBe(5); // plain move: 5 hits
-    expect(Math.ceil(20 / superHit)).toBe(2); // super effective: 2 hits
   });
 
   it('doubles-ish for super effective and halves-ish for weak', () => {
@@ -56,6 +54,15 @@ describe('calcDamage', () => {
     expect(plain.damage).toBe(5);
     expect(sup.damage).toBe(11);
     expect(weak.damage).toBe(2);
+  });
+
+  it('pins the multipliers exactly on a large base (42 at a top roll)', () => {
+    const big = { attacker: { level: 20, attack: 40 }, rng: fixed(0.999) };
+    const hit = (moveType: 'fire' | 'water', defType: 'leaf' | 'water' | 'fire') =>
+      calcDamage(input({ ...big, move: { type: moveType, power: 50 }, defender: { defense: 10, type: defType } })).damage;
+    expect(hit('fire', 'fire')).toBe(41); // ×1
+    expect(hit('fire', 'leaf')).toBe(83); // ×2
+    expect(hit('fire', 'water')).toBe(20); // ×0.5
   });
 
 
