@@ -108,6 +108,13 @@ rigor:
       and xp a whole number 0..xpToNextLevel(level)-1 (0 at the cap); gainXp
       throws on broken values rather than silently misbehaving.
 - [x] Encounter levels (task 7 review) → task 11 must keep wild levels ≤ LEVEL_CAP (20).
+- [x] Runtime data checks (task 11 review) → task 13/15 boot must run
+      validateCreatureData + validateAreas on the fetched creatures.json and show a
+      parent-readable error instead of a blank game. `npm run build` now runs tests
+      (8ff65df) so a bad edit can't deploy.
+- [x] Encounter cooldown counter (task 11 review) → overworld keeps
+      stepsSinceBattle in scene memory, starting at 0 after battle/new game/reload
+      (not saved).
 
 - [x] Image URLs under the Pages base (from task 3 review) → requirement for
       task 13/14: build creature image URLs as
@@ -147,15 +154,16 @@ rigor:
 - [~] 9. Save system: versioned serialize/load via localStorage, corrupt/unknown
       version → fresh + backup key, request persistent storage.
       files: src/logic/save.ts, src/logic/save.test.ts
-      commits: [7f5f347]
-- [~] 10. Maps as ASCII data (town, route, pond) + parser + BFS tap-to-walk pathfinding.
+      commits: [7f5f347, 5f22bd4]
+- [x] 10. Maps as ASCII data (town, route, pond) + parser + BFS tap-to-walk pathfinding.
       files: src/logic/map.ts, src/logic/map.test.ts, src/data/maps.ts
-      commits: [673e810, efdd912]
-- [~] 11. Encounter roll per area (chance per grass step, weighted species, level range).
+      commits: [673e810, efdd912, bddca4d]
+- [x] 11. Encounter roll per area (chance per grass step, weighted species, level range).
       files: src/logic/encounters.ts, src/logic/encounters.test.ts, src/data/maps.ts
-      commits: [b8bb08f]
-- [ ] 12. Read-aloud helper + DialogBox UI with speaker button + big Button UI.
+      commits: [b8bb08f, 8ff65df]
+- [~] 12. Read-aloud helper + DialogBox UI with speaker button + big Button UI.
       files: src/ui/speech.ts, src/ui/speech.test.ts, src/ui/DialogBox.ts, src/ui/Button.ts
+      commits: [a70a6a8]
 - [ ] 13. Overworld scene: procedural tile textures, player sprite, tap-to-walk,
       map transitions, grass → battle, home bed heals, autosave.
       files: src/scenes/OverworldScene.ts, src/scenes/textures.ts, src/main.ts
@@ -202,3 +210,7 @@ rigor:
 - task 9: implemented; 21 tests. Save = {version:1, savedAt, state}. Load repairs: drop unknown-species / bad-level creatures (into backup `dropped`), recompute stats, clamp hp/xp (xp 0 at cap), regenerate missing/duplicate uids, refill empty party from Box, filter Book + force owned species to caught, reset bad position to START. Unreadable storage → no save; setItem failure → saveGame false.
 - task 10 review: spec — closest-tile test relied on a tie. code — paths walked through/ended on warps (tap tree next to town exit → sent to route!); tie test; empty-map check untested; world-data gaps (arrival-on-warp, key≠id); `from` unchecked. Fixed efdd912: BFS never enters a warp unless it is the tapped tile; unambiguous closest test; empty map test; id/arrival checks; invalid start throws (save load already repairs positions). Reverse-warp coordinate check → disagree: arrival tiles are deliberately one step inside the exit, not the mirror tile. 18 tests. Code re-review requested (logic change).
 - task 11: implemented. Also touched creatures.ts/test + creatures.json (optional `areas` per species) — needed for Done-when #6 (new creature appears in encounters with no code change). AREAS (chance 0.15, levels) in maps.ts; 3-step cooldown after battles. 148 logic tests green.
+- task 9 review: spec — xp clamped rather than rejected (→ intended: repair-first, kids keep creatures; level drops only when statsAtLevel can't compute it); whole-number xp/hp paths untested; parent-edit scenario not truly exercised. code — inherited-key map lookup ("constructor") crashed load; above-cap creatures deleted; PARTY_MAX not enforced; single backup slot overwritten; no migration path / newer-version handling; missing box discarded save; backup-write failure untested; valid non-START position untested; top-level array/primitive untested; weak problem assertion. Fixed 5f22bd4: Object.hasOwn + last-resort try/catch → fresh+backup; clamp level to cap; overflow → Box; backup history (last 5, deduped); MIGRATIONS hook, newer version → backup+fresh (documented); box defaults []; resume-on-exit tile → START (from task 10 re-review #4). 35 tests. Code re-review requested.
+- task 10 re-review: off-map tap beside exit counted as tapping it; detour test didn't detour; unanchored throws; save could resume on a warp; crash-y data test. Fixed bddca4d (+ save part in 5f22bd4). Done.
+- task 11 review: spec — "weighted species" but pick is uniform → disagree: uniform odds are simpler and fair for kids; task wording was loose. Out-of-list files (creatures.ts/json) accepted for Done-when #6. Cooldown not requested → keep: gentle difficulty lever, documented. Runtime cap enforcement → validateAreas at boot (recorded under Unknowns). code — validateAreas never runs at runtime/build; stepsSinceBattle semantics; evenness untested; validation branches + fixture isolation. Fixed 8ff65df (build runs vitest; doc comment; per-bucket ±3%; chance/level cases on isolated fixture). Done.
+- task 12: implemented (speech 7 tests; Button/DialogBox are Phaser UI, verified visually in task 13).
