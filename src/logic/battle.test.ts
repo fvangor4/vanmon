@@ -163,6 +163,41 @@ describe('swap', () => {
   });
 });
 
+describe('catch', () => {
+  it('catches the wild creature after 3 wiggles and ends the battle', () => {
+    const s = startBattle([mon('firey')], mon('watery'));
+    const { state, events } = takeTurn(s, { kind: 'catch' }, makeBattleContext(data, seq(0, 0, 0)));
+    expect(events).toEqual([{ kind: 'catch', wiggles: 3, caught: true }]);
+    expect(state.outcome).toBe('caught');
+    expect(state.wild.speciesId).toBe('watery');
+  });
+
+  it('when it breaks free, the battle goes on and the wild creature takes its turn', () => {
+    const s = startBattle([mon('firey')], mon('watery'));
+    // wiggle rolls: pass, fail → 1 wiggle; then wild move pick + damage roll
+    const { state, events } = takeTurn(s, { kind: 'catch' }, makeBattleContext(data, seq(0.1, 0.99, 0.1, 0.5)));
+    expect(events[0]).toEqual({ kind: 'catch', wiggles: 1, caught: false });
+    expect(events.slice(1).map((e) => e.kind)).toEqual(['move', 'damage']);
+    expect(state.outcome).toBeNull();
+    expect(state.party[0].hp).toBeLessThan(s.party[0].hp);
+  });
+
+  it('can still lose if the wild creature knocks you out after breaking free', () => {
+    const s = startBattle([mon('firey', 5, 1)], mon('watery'));
+    const { state, events } = takeTurn(s, { kind: 'catch' }, makeBattleContext(data, seq(0.99, 0.5, 0.5)));
+    expect(events.slice(-2).map((e) => e.kind)).toEqual(['faint', 'lost']);
+    expect(state.outcome).toBe('lost');
+  });
+
+  it('gets easier when the wild creature is tired', () => {
+    // a 0.9 roll fails a full-HP wiggle (≈0.843) but passes a 1-HP one (≈0.98)
+    const tired = startBattle([mon('firey')], mon('watery', 5, 1));
+    const fresh = startBattle([mon('firey')], mon('watery'));
+    expect(takeTurn(tired, { kind: 'catch' }, makeBattleContext(data, seq(0.9, 0.9, 0.9))).state.outcome).toBe('caught');
+    expect(takeTurn(fresh, { kind: 'catch' }, makeBattleContext(data, seq(0.9, 0.5, 0.5))).state.outcome).toBeNull();
+  });
+});
+
 describe('run', () => {
   it('always gets away', () => {
     const s = startBattle([mon('firey')], mon('watery'));

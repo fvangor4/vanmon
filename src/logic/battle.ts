@@ -1,15 +1,17 @@
 // Battle engine. Pure: takes a state and an action, returns the next state plus
 // a list of events for the battle scene to animate and read aloud.
 // The player always acts first; the wild creature picks a random move.
+// On 'caught', state.wild is the creature to add to the player's collection.
 
 import type { Creature, CreatureData, MoveDef, SpeciesDef } from './creatures';
+import { rollCatch } from './catch';
 import { calcDamage, type Effectiveness, type Rng } from './damage';
 
 /** Wild creatures hit softer, so a 5-year-old's starter isn't knocked out in two hits. */
 export const WILD_DAMAGE_SCALE = 0.6;
 
 export type Side = 'player' | 'wild';
-export type Outcome = 'won' | 'lost' | 'ran';
+export type Outcome = 'won' | 'lost' | 'ran' | 'caught';
 
 export interface BattleState {
   party: Creature[];
@@ -21,6 +23,7 @@ export interface BattleState {
 export type BattleAction =
   | { kind: 'fight'; moveIndex: number }
   | { kind: 'swap'; partyIndex: number }
+  | { kind: 'catch' }
   | { kind: 'run' };
 
 export type BattleEvent =
@@ -28,6 +31,7 @@ export type BattleEvent =
   | { kind: 'damage'; target: Side; amount: number; hpAfter: number; effectiveness: Effectiveness }
   | { kind: 'faint'; side: Side }
   | { kind: 'swap'; partyIndex: number }
+  | { kind: 'catch'; wiggles: number; caught: boolean }
   | { kind: 'ran' }
   | { kind: 'won' }
   | { kind: 'lost' };
@@ -125,6 +129,14 @@ export function takeTurn(prev: BattleState, action: BattleAction, ctx: BattleCon
       events.push({ kind: 'ran' });
       state.outcome = 'ran';
       break;
+
+    case 'catch': {
+      const roll = rollCatch(state.wild, ctx.rng);
+      events.push({ kind: 'catch', ...roll });
+      if (roll.caught) state.outcome = 'caught';
+      else wildTurn(state, ctx, events);
+      break;
+    }
 
     case 'swap': {
       const next = state.party[action.partyIndex];
