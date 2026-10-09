@@ -21,7 +21,7 @@ export class HoldButton extends BigButton {
     this.ring = scene.add.graphics();
     this.add(this.ring);
 
-    this.on('pointerdown', () => this.tracker.press(this.clock));
+    this.on('pointerdown', () => this.enabled && this.tracker.press(this.clock));
     this.on('pointerup', () => this.reset());
     this.on('pointerout', () => this.reset());
 

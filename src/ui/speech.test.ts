@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createSpeaker, type SpeechSynthLike } from './speech';
+import { createSpeaker, unlockSpeechOnFirstTouch, type SpeechSynthLike } from './speech';
 
 class FakeUtterance {
   voice: unknown = null;
+  volume = 1;
   rate = 1;
   pitch = 1;
   lang = '';
@@ -98,5 +99,25 @@ describe('createSpeaker', () => {
     const synth = fakeSynth();
     createSpeaker({ synth, Utterance: FakeUtterance as any }).say('  ');
     expect(synth.spoken).toHaveLength(0);
+  });
+});
+
+describe('unlocking speech on iOS', () => {
+  it('speaks one silent utterance, only once', () => {
+    const synth = fakeSynth();
+    const speaker = createSpeaker({ synth, Utterance: FakeUtterance as any });
+    speaker.unlock();
+    speaker.unlock();
+    expect(synth.spoken).toHaveLength(1);
+    expect(synth.spoken[0].volume).toBe(0);
+  });
+
+  it('unlocks on the first touch anywhere and then stops listening', () => {
+    const target = new EventTarget();
+    const unlock = vi.fn();
+    unlockSpeechOnFirstTouch(target, { supported: true, unlock, say() {}, stop() {} });
+    target.dispatchEvent(new Event('touchend'));
+    target.dispatchEvent(new Event('pointerup'));
+    expect(unlock).toHaveBeenCalledOnce();
   });
 });

@@ -8,6 +8,9 @@ import { PartyScene } from './scenes/PartyScene';
 import { OverworldScene } from './scenes/OverworldScene';
 import { StarterScene } from './scenes/StarterScene';
 import { TitleScene } from './scenes/TitleScene';
+import { unlockSpeechOnFirstTouch } from './ui/speech';
+
+unlockSpeechOnFirstTouch(document);
 
 const game = new Phaser.Game({
   type: Phaser.AUTO,

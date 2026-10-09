@@ -10,6 +10,8 @@ export interface SpeechSynthLike {
 
 export interface Speaker {
   supported: boolean;
+  /** Speaks silently once, from inside a tap, so iOS allows speech later. */
+  unlock(): void;
   say(text: string): void;
   stop(): void;
 }
@@ -38,12 +40,20 @@ export function createSpeaker(
   },
 ): Speaker {
   const { synth, Utterance } = env;
-  if (!synth || !Utterance) return { supported: false, say() {}, stop() {} };
+  if (!synth || !Utterance) return { supported: false, unlock() {}, say() {}, stop() {} };
   // Some browsers load voices lazily; asking once early helps the first line get the nice voice.
   synth.getVoices();
 
+  let unlocked = false;
   return {
     supported: true,
+    unlock() {
+      if (unlocked) return;
+      unlocked = true;
+      const u = new Utterance(' ');
+      u.volume = 0;
+      synth.speak(u);
+    },
     say(text) {
       const clean = text.replace(EMOJI, '').replace(/\s+/g, ' ').trim();
       if (!clean) return;
@@ -63,3 +73,17 @@ export function createSpeaker(
 
 /** One shared speaker for the whole game. */
 export const speaker = createSpeaker();
+
+/**
+ * iOS only lets a page speak after speech starts inside a tap. Unlock on the
+ * very first touch anywhere, so lines spoken later (from timers, or after a
+ * press-and-hold) are heard.
+ */
+export function unlockSpeechOnFirstTouch(target: Pick<EventTarget, 'addEventListener' | 'removeEventListener'>, s: Speaker = speaker): void {
+  const events = ['touchend', 'pointerup', 'click'];
+  const handler = () => {
+    s.unlock();
+    events.forEach((e) => target.removeEventListener(e, handler));
+  };
+  events.forEach((e) => target.addEventListener(e, handler));
+}

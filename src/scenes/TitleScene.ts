@@ -1,5 +1,5 @@
 // Title: "Play" continues the saved game; "New Game" starts over (press and
-// hold when a save exists). The first tap here also lets iOS speak aloud.
+// hold when a save exists). Speech is unlocked by the first touch (main.ts).
 
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config';
@@ -31,8 +31,9 @@ export class TitleScene extends Phaser.Scene {
       .setOrigin(0.5);
     this.tweens.add({ targets: logo, scale: 1.05, yoyo: true, repeat: -1, duration: 900, ease: 'Sine.InOut' });
 
-    pickStarters(boot.data).forEach((s, i) => {
-      const img = this.add.image(GAME_WIDTH / 2 + (i - 1) * 260, 380, creatureTexture(s.id)).setDisplaySize(190, 190);
+    const starters = pickStarters(boot.data);
+    starters.forEach((s, i) => {
+      const img = this.add.image(GAME_WIDTH / 2 + (i - (starters.length - 1) / 2) * 260, 380, creatureTexture(s.id)).setDisplaySize(190, 190);
       this.tweens.add({ targets: img, y: 360, yoyo: true, repeat: -1, duration: 600 + i * 120, ease: 'Sine.InOut' });
     });
 

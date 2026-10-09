@@ -115,6 +115,17 @@ function backup(store: KeyValueStore, raw: string, problem: string, dropped: unk
   }
 }
 
+/** Copies the current save into the backup history (e.g. before New Game replaces it). */
+export function backupCurrentSave(store: KeyValueStore, reason: string): void {
+  let raw: string | null = null;
+  try {
+    raw = store.getItem(SAVE_KEY);
+  } catch {
+    return;
+  }
+  if (raw !== null) backup(store, raw, reason);
+}
+
 /** A saved creature made to fit today's creatures.json, or null if it can't be. */
 function repairCreature(raw: unknown, species: Map<string, SpeciesDef>, seenUids: Set<string>): Creature | null {
   if (!isRecord(raw)) return null;

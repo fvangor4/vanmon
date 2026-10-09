@@ -4,6 +4,7 @@ import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config';
 import { createCreature, type SpeciesDef } from '../logic/creatures';
 import { newGame } from '../logic/gameState';
+import { backupCurrentSave } from '../logic/save';
 import { pickStarters } from '../logic/starters';
 import { TYPE_ICON } from '../logic/battleText';
 import { creatureTexture, Session, setSession, type BootResult } from '../session';
@@ -30,6 +31,8 @@ export class StarterScene extends Phaser.Scene {
     this.add
       .text(GAME_WIDTH / 2, 80, 'Pick your buddy!', { fontFamily: FONT, fontSize: '64px', fontStyle: 'bold', color: '#1d2b3a' })
       .setOrigin(0.5);
+    new BigButton(this, 90, 80, { icon: '⬅️', color: COLORS.normal, width: 110, height: 90, onTap: () => this.scene.start('Title') });
+    new BigButton(this, GAME_WIDTH - 90, 80, { icon: '🔊', color: COLORS.sky, width: 110, height: 90, onTap: () => speaker.say('Pick your buddy!') });
 
     this.highlight = this.add.graphics();
     const starters = pickStarters(boot.data);
@@ -49,7 +52,9 @@ export class StarterScene extends Phaser.Scene {
     this.chosen = s;
     this.highlight.clear().lineStyle(10, COLORS.sunny, 1).strokeRoundedRect(x - 146, 164, 292, 352, 36);
     speaker.say(`${s.name}?`);
-    this.tweens.add({ targets: img, y: img.y - 30, yoyo: true, duration: 180 });
+    this.tweens.killTweensOf(img);
+    img.setY(320);
+    this.tweens.add({ targets: img, y: 290, yoyo: true, duration: 180 });
     this.confirm.forEach((o) => o.destroy());
     this.confirm = [
       new BigButton(this, GAME_WIDTH / 2 - 150, 640, { icon: '✅', label: 'Yes!', color: COLORS.go, width: 260, height: 100, onTap: () => this.start(boot) }),
@@ -71,6 +76,7 @@ export class StarterScene extends Phaser.Scene {
 
   private start(boot: BootResult): void {
     if (!this.chosen) return;
+    backupCurrentSave(boot.store, 'replaced by a new game');
     const s = new Session(boot.data, newGame(createCreature(this.chosen, STARTER_LEVEL)), boot.store);
     s.canSave = !boot.loaded.protectSave;
     setSession(s);

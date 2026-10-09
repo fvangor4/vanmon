@@ -30,4 +30,13 @@ describe('HoldTracker', () => {
   it('does nothing until pressed', () => {
     expect(new HoldTracker(1000).update(99999)).toEqual({ progress: 0, done: false });
   });
+
+  it('a second full hold fires again', () => {
+    const h = new HoldTracker(1000);
+    h.press(0);
+    expect(h.update(1000).done).toBe(true);
+    h.release();
+    h.press(5000);
+    expect(h.update(6000).done).toBe(true);
+  });
 });

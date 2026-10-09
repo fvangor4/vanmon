@@ -5,7 +5,10 @@ import shipped from '../../public/data/creatures.json';
 
 describe('pickStarters', () => {
   it('offers the first fire, water and leaf creature, in that order', () => {
-    expect(pickStarters(validateCreatureData(shipped)).map((s) => s.id)).toEqual(['emberpup', 'puddlefin', 'sproutle']);
+    const data = validateCreatureData(shipped);
+    const sp = (id: string, type: string) => ({ ...data.species[0], id, type: type as 'fire' });
+    const mixed = { ...data, species: [sp('w1', 'water'), sp('l1', 'leaf'), sp('f1', 'fire'), sp('f2', 'fire'), sp('w2', 'water')] };
+    expect(pickStarters(mixed).map((s) => s.id)).toEqual(['f1', 'w1', 'l1']);
   });
 
   it('skips a type with no creatures', () => {

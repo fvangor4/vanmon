@@ -31,7 +31,7 @@ export class BigButton extends Phaser.GameObjects.Container {
   /** What shrinks when pressed. The button itself keeps its size, so its tap area never shrinks. */
   private face: Phaser.GameObjects.Container;
   private bg: Phaser.GameObjects.Graphics;
-  private enabled = true;
+  protected enabled = true;
   /** True only between a press that started on this button and its release. */
   private pressed = false;
   private readonly bw: number;

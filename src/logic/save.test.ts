@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createCreature, statsAtLevel, type Creature, type CreatureData } from './creatures';
 import { newGame, type GameState } from './gameState';
-import { BACKUP_KEY, browserStore, loadGame, readBackups, requestPersistentStorage, SAVE_KEY, SAVE_VERSION, saveGame, type KeyValueStore } from './save';
+import { BACKUP_KEY, backupCurrentSave, browserStore, loadGame, readBackups, requestPersistentStorage, SAVE_KEY, SAVE_VERSION, saveGame, type KeyValueStore } from './save';
 import { PARTY_MAX } from './gameState';
 import { MAPS, START } from '../data/maps';
 import { LEVEL_CAP, xpToNextLevel } from './xp';
@@ -310,6 +310,22 @@ describe('storage that misbehaves (private browsing, full disk)', () => {
   it('reports a failed save instead of crashing', () => {
     const store: KeyValueStore = { getItem: () => null, setItem: () => { throw new Error('QuotaExceededError'); }, removeItem: () => {} };
     expect(saveGame(store, game())).toBe(false);
+  });
+});
+
+describe('backupCurrentSave', () => {
+  it('keeps the old game in the backup history before a New Game replaces it', () => {
+    const store = memoryStore();
+    saveGame(store, game());
+    const old = store.items[SAVE_KEY];
+    backupCurrentSave(store, 'new game started');
+    expect(readBackups(store).at(-1)).toMatchObject({ raw: old, problem: 'new game started' });
+  });
+
+  it('does nothing when there is no save', () => {
+    const store = memoryStore();
+    backupCurrentSave(store, 'new game started');
+    expect(readBackups(store)).toEqual([]);
   });
 });
 
