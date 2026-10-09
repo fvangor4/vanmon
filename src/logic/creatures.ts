@@ -62,6 +62,11 @@ export class CreatureDataError extends Error {
 
 const MAX_BASE_STAT = 255;
 const MAX_POWER = 200;
+export const MAX_LEVEL = 100;
+/** Ids are lowercase words joined by dashes, e.g. "fire-kitty". */
+const ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+/** Just a file name in public/creatures/, no folders. */
+const IMAGE_PATTERN = /^[A-Za-z0-9_-]+\.(png|svg|jpe?g|webp)$/;
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -69,6 +74,13 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 function isNonEmptyString(v: unknown): v is string {
   return typeof v === 'string' && v.trim().length > 0;
+}
+
+function checkId(raw: Record<string, unknown>, label: string, problems: string[]): void {
+  if (!isNonEmptyString(raw.id)) problems.push(`${label}: missing id`);
+  else if (!ID_PATTERN.test(raw.id)) {
+    problems.push(`${label}: id must be lowercase letters, numbers and dashes (like "fire-kitty")`);
+  }
 }
 
 function isIntInRange(v: unknown, min: number, max: number): v is number {
@@ -81,7 +93,7 @@ function checkMove(raw: unknown, index: number, problems: string[]): void {
     return;
   }
   const label = isNonEmptyString(raw.id) ? `move "${raw.id}"` : `move #${index + 1}`;
-  if (!isNonEmptyString(raw.id)) problems.push(`${label}: missing id`);
+  checkId(raw, label, problems);
   if (!isNonEmptyString(raw.name)) problems.push(`${label}: missing name`);
   if (!(MOVE_TYPES as readonly unknown[]).includes(raw.type)) {
     problems.push(`${label}: type must be one of ${MOVE_TYPES.join(', ')}`);
@@ -94,7 +106,7 @@ function checkMove(raw: unknown, index: number, problems: string[]): void {
 function checkSpecies(
   raw: unknown,
   index: number,
-  moveIds: Set<string>,
+  movesById: Map<string, Record<string, unknown>>,
   problems: string[],
 ): void {
   if (!isRecord(raw)) {
@@ -102,12 +114,15 @@ function checkSpecies(
     return;
   }
   const label = isNonEmptyString(raw.id) ? `species "${raw.id}"` : `species #${index + 1}`;
-  if (!isNonEmptyString(raw.id)) problems.push(`${label}: missing id`);
+  checkId(raw, label, problems);
   if (!isNonEmptyString(raw.name)) problems.push(`${label}: missing name`);
   if (!(CREATURE_TYPES as readonly unknown[]).includes(raw.type)) {
     problems.push(`${label}: type must be one of ${CREATURE_TYPES.join(', ')}`);
   }
   if (!isNonEmptyString(raw.image)) problems.push(`${label}: missing image file name`);
+  else if (!IMAGE_PATTERN.test(raw.image)) {
+    problems.push(`${label}: image must be a file name like "fire-kitty.png" (png, svg, jpg or webp)`);
+  }
 
   if (!isRecord(raw.baseStats)) {
     problems.push(`${label}: missing baseStats`);
@@ -121,19 +136,31 @@ function checkSpecies(
 
   if (!Array.isArray(raw.moves) || raw.moves.length !== 2) {
     problems.push(`${label}: must have exactly 2 moves`);
-  } else {
-    for (const m of raw.moves) {
-      if (!moveIds.has(m as string)) problems.push(`${label}: unknown move "${String(m)}"`);
+    return;
+  }
+  const known: Record<string, unknown>[] = [];
+  for (const m of raw.moves) {
+    if (typeof m !== 'string') problems.push(`${label}: moves must be move ids in quotes, like "bump"`);
+    else if (!movesById.has(m)) problems.push(`${label}: unknown move "${m}"`);
+    else known.push(movesById.get(m)!);
+  }
+  if (known.length === 2) {
+    const types = known.map((m) => m.type);
+    if (!types.includes('normal') || !types.includes(raw.type)) {
+      problems.push(`${label}: needs one normal move and one ${String(raw.type)} move`);
     }
   }
 }
 
+/** Duplicate ids, ignoring case. Missing ids are reported elsewhere, not here. */
 function findDuplicates(ids: unknown[]): string[] {
-  const seen = new Set<unknown>();
+  const seen = new Set<string>();
   const dupes = new Set<string>();
   for (const id of ids) {
-    if (seen.has(id)) dupes.add(String(id));
-    seen.add(id);
+    if (!isNonEmptyString(id)) continue;
+    const key = id.toLowerCase();
+    if (seen.has(key)) dupes.add(id);
+    seen.add(key);
   }
   return [...dupes];
 }
@@ -151,8 +178,10 @@ export function validateCreatureData(raw: unknown): CreatureData {
   }
 
   moves.forEach((m, i) => checkMove(m, i, problems));
-  const moveIds = new Set(moves.filter(isRecord).map((m) => m.id as string));
-  species.forEach((s, i) => checkSpecies(s, i, moveIds, problems));
+  const movesById = new Map(
+    moves.filter(isRecord).filter((m) => typeof m.id === 'string').map((m) => [m.id as string, m]),
+  );
+  species.forEach((s, i) => checkSpecies(s, i, movesById, problems));
 
   for (const id of findDuplicates(moves.filter(isRecord).map((m) => m.id))) {
     problems.push(`duplicate move id "${id}"`);
@@ -165,8 +194,15 @@ export function validateCreatureData(raw: unknown): CreatureData {
   return raw as unknown as CreatureData;
 }
 
-/** Stats for a species at a level. Level 5 with base 50 ≈ 20 HP, 10 attack. */
+function assertLevel(level: number): void {
+  if (!Number.isInteger(level) || level < 1 || level > MAX_LEVEL) {
+    throw new RangeError(`level must be a whole number from 1 to ${MAX_LEVEL}, got ${level}`);
+  }
+}
+
+/** Stats for a species at a level. Level 5 with base 50 = 20 HP, 10 attack. */
 export function statsAtLevel(base: BaseStats, level: number): Stats {
+  assertLevel(level);
   return {
     maxHp: Math.floor((base.hp * level) / 50) + level + 10,
     attack: Math.floor((base.attack * level) / 50) + 5,
@@ -174,10 +210,16 @@ export function statsAtLevel(base: BaseStats, level: number): Stats {
   };
 }
 
+/** Random id. crypto.randomUUID needs HTTPS and iOS 15.4+, so build one from getRandomValues. */
+export function newUid(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 export function createCreature(species: SpeciesDef, level: number): Creature {
   const stats = statsAtLevel(species.baseStats, level);
   return {
-    uid: crypto.randomUUID(),
+    uid: newUid(),
     speciesId: species.id,
     level,
     xp: 0,

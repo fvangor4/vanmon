@@ -1,9 +1,9 @@
 {
   "moves": [
-    { "id": "tackle", "name": "Tackle", "type": "normal", "power": 35 },
+    { "id": "bump", "name": "Bump", "type": "normal", "power": 35 },
     { "id": "bonk", "name": "Bonk", "type": "normal", "power": 35 },
-    { "id": "scratch", "name": "Scratch", "type": "normal", "power": 35 },
-    { "id": "ember", "name": "Ember", "type": "fire", "power": 45 },
+    { "id": "swipe", "name": "Swipe", "type": "normal", "power": 35 },
+    { "id": "spark", "name": "Spark", "type": "fire", "power": 45 },
     { "id": "flame-dash", "name": "Flame Dash", "type": "fire", "power": 50 },
     { "id": "splash-shot", "name": "Splash Shot", "type": "water", "power": 45 },
     { "id": "bubble-pop", "name": "Bubble Pop", "type": "water", "power": 50 },
@@ -17,7 +17,7 @@
       "type": "fire",
       "image": "emberpup.svg",
       "baseStats": { "hp": 50, "attack": 55, "defense": 45 },
-      "moves": ["tackle", "ember"]
+      "moves": ["bump", "spark"]
     },
     {
       "id": "toastle",
@@ -33,7 +33,7 @@
       "type": "water",
       "image": "puddlefin.svg",
       "baseStats": { "hp": 55, "attack": 50, "defense": 50 },
-      "moves": ["tackle", "splash-shot"]
+      "moves": ["bump", "splash-shot"]
     },
     {
       "id": "bubbloo",
@@ -49,7 +49,7 @@
       "type": "leaf",
       "image": "sproutle.svg",
       "baseStats": { "hp": 55, "attack": 45, "defense": 55 },
-      "moves": ["tackle", "leaf-toss"]
+      "moves": ["bump", "leaf-toss"]
     },
     {
       "id": "leafbun",
@@ -57,7 +57,7 @@
       "type": "leaf",
       "image": "leafbun.svg",
       "baseStats": { "hp": 45, "attack": 55, "defense": 45 },
-      "moves": ["scratch", "vine-swing"]
+      "moves": ["swipe", "vine-swing"]
     }
   ]
 }
