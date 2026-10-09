@@ -40,7 +40,7 @@ export function battleText(e: BattleEvent, n: BattleNames): string | null {
     case 'won':
       return 'You won! 🎉';
     case 'lost':
-      return "Your creatures got sleepy! 💤 Let's go home and rest.";
+      return "Time for a nap! 💤 Let's go home and rest.";
   }
 }
 

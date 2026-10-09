@@ -8,6 +8,8 @@ import { speaker } from './speech';
 
 const BOX_W = GAME_WIDTH - 48;
 const BOX_H = 170;
+/** A message stays up at least this long before a tap can dismiss it. */
+const MIN_SHOW_MS = 600;
 
 export class DialogBox extends Phaser.GameObjects.Container {
   private text: Phaser.GameObjects.Text;
@@ -16,6 +18,8 @@ export class DialogBox extends Phaser.GameObjects.Container {
   private resolve: (() => void) | null = null;
   /** Only a tap that started on the box continues it (not a slide off a button). */
   private pressed = false;
+  /** When the current message appeared; a double-tap can't skip the next one. */
+  private shownAt = 0;
 
   constructor(scene: Phaser.Scene) {
     super(scene, GAME_WIDTH / 2, GAME_HEIGHT - BOX_H / 2 - 20);
@@ -51,7 +55,7 @@ export class DialogBox extends Phaser.GameObjects.Container {
     this.on('pointerdown', () => (this.pressed = true));
     this.on('pointerout', () => (this.pressed = false));
     this.on('pointerup', () => {
-      if (!this.pressed) return;
+      if (!this.pressed || this.scene.time.now - this.shownAt < MIN_SHOW_MS) return;
       this.pressed = false;
       speaker.stop();
       this.finish();
@@ -71,6 +75,7 @@ export class DialogBox extends Phaser.GameObjects.Container {
     speaker.stop();
     this.finish();
     this.current = text;
+    this.shownAt = this.scene.time.now;
     this.text.setText(text);
     this.arrow.setVisible(opts.waitForTap !== false);
     this.setVisible(true);

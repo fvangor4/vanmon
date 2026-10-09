@@ -31,12 +31,13 @@ describe('battleText', () => {
     expect(battleText({ kind: 'catch', wiggles: 0, caught: false }, names)).toBe('Oh no! It popped right out!');
     expect(battleText({ kind: 'catch', wiggles: 1, caught: false }, names)).toBe('It broke free!');
     expect(battleText({ kind: 'catch', wiggles: 2, caught: false }, names)).toBe('Aww! So close!');
+    expect(battleText({ kind: 'catch', wiggles: 3, caught: false }, names)).toBe('It broke free!');
   });
 
   it('describes how the battle ended, gently', () => {
     expect(battleText({ kind: 'ran' }, names)).toBe('You got away safely! 🏃');
     expect(battleText({ kind: 'won' }, names)).toBe('You won! 🎉');
-    expect(battleText({ kind: 'lost' }, names)).toBe("Your creatures got sleepy! 💤 Let's go home and rest.");
+    expect(battleText({ kind: 'lost' }, names)).toBe("Time for a nap! 💤 Let's go home and rest.");
   });
 });
 
@@ -48,5 +49,6 @@ describe('other battle messages', () => {
 
   it('has an icon for every move type', () => {
     expect(Object.keys(TYPE_ICON).sort()).toEqual(['fire', 'leaf', 'normal', 'water']);
+    for (const icon of Object.values(TYPE_ICON)) expect(icon.trim()).not.toBe('');
   });
 });

@@ -201,16 +201,36 @@ export class BattleScene extends Phaser.Scene {
 
   private async act(action: BattleAction): Promise<void> {
     this.clearMenu();
-    const s = session();
-    const { state, events } = takeTurn(this.battle, action, makeBattleContext(s.data, s.rng));
-    const before = this.battle;
-    for (const e of events) {
-      if (e.kind === 'swap') this.battle = { ...this.battle, activeIndex: e.partyIndex };
-      await this.play(e, before);
+    try {
+      const s = session();
+      const { state, events } = takeTurn(this.battle, action, makeBattleContext(s.data, s.rng));
+      // Save a finished battle's result before the animations, so closing the
+      // iPad mid-celebration never loses a catch or a level-up.
+      const result = state.outcome ? this.saveOutcome(state) : null;
+      const before = this.battle;
+      for (const e of events) {
+        if (e.kind === 'swap') this.battle = { ...this.battle, activeIndex: e.partyIndex };
+        await this.play(e, before);
+      }
+      this.battle = state;
+      if (result) await this.celebrate(result.levelUps, result.wentToBox);
+      else this.showMainMenu();
+    } catch (err) {
+      // Never leave a child stuck on a screen with no buttons.
+      console.error('VanMon battle error', err);
+      await this.say("Oops! Let's head back.", true);
+      this.leave();
     }
-    this.battle = state;
-    if (state.outcome) await this.finish();
-    else this.showMainMenu();
+  }
+
+  private saveOutcome(state: BattleState): { levelUps: number[]; wentToBox: boolean } {
+    const s = session();
+    const prev = s.state;
+    const { state: next, levelUps } = applyBattleOutcome(prev, state, s.data);
+    s.state = next;
+    s.stepsSinceBattle = 0;
+    s.save();
+    return { levelUps, wentToBox: state.outcome === 'caught' && prev.party.length >= PARTY_MAX };
   }
 
   private async play(e: BattleEvent, before: BattleState): Promise<void> {
@@ -272,25 +292,34 @@ export class BattleScene extends Phaser.Scene {
       this.add.particles(ball.x, ball.y, BALL_TEXTURE, { speed: 200, scale: { start: 0.3, end: 0 }, lifespan: 600, quantity: 12, emitting: false }).explode(12);
     } else {
       ball.destroy();
-      this.wildSprite.setDisplaySize(CREATURE_SIZE, CREATURE_SIZE);
-      const sx = this.wildSprite.scaleX;
-      this.wildSprite.setScale(0);
-      await new Promise<void>((r) => this.tweens.add({ targets: this.wildSprite, scale: sx, duration: 250, ease: 'Back.Out', onComplete: () => r() }));
+      // Grow back to its exact size (kids' drawings may not be square).
+      this.wildSprite.setDisplaySize(1, 1);
+      await new Promise<void>((r) =>
+        this.tweens.add({
+          targets: this.wildSprite,
+          displayWidth: CREATURE_SIZE,
+          displayHeight: CREATURE_SIZE,
+          duration: 250,
+          ease: 'Back.Out',
+          onComplete: () => r(),
+        }),
+      );
     }
   }
 
-  private async finish(): Promise<void> {
-    const s = session();
-    const prev = s.state;
-    const { state, levelUps } = applyBattleOutcome(prev, this.battle, s.data);
-    s.state = state;
-    s.stepsSinceBattle = 0;
-    s.save();
-
+  private async celebrate(levelUps: number[], wentToBox: boolean): Promise<void> {
     const n = this.names();
-    if (this.battle.outcome === 'caught' && prev.party.length >= PARTY_MAX) await this.say(boxText(n.wild), true);
+    if (wentToBox) await this.say(boxText(n.wild), true);
+    if (levelUps.length > 0) {
+      const grown = session().state.party[this.battle.activeIndex];
+      this.playerCard.show(n.player(this.battle.activeIndex), grown);
+      this.tweens.add({ targets: this.playerSprite, scaleX: this.playerSprite.scaleX * 1.15, scaleY: this.playerSprite.scaleY * 1.15, yoyo: true, duration: 250, repeat: 1 });
+    }
     for (const level of levelUps) await this.say(levelUpText(n.player(this.battle.activeIndex), level), true);
+    this.leave();
+  }
 
+  private leave(): void {
     this.cameras.main.fadeOut(300);
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.start('Overworld'));
   }
