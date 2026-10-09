@@ -4,7 +4,14 @@
 import type { CreatureData, SpeciesDef } from './logic/creatures';
 import type { Rng } from './logic/damage';
 import type { GameState } from './logic/gameState';
-import { saveGame, type KeyValueStore } from './logic/save';
+import { saveGame, type KeyValueStore, type LoadResult } from './logic/save';
+
+/** What BootScene hands to the title screen (via the scene registry). */
+export interface BootResult {
+  data: CreatureData;
+  store: KeyValueStore;
+  loaded: LoadResult;
+}
 
 export class Session {
   /** Tall-grass steps since the last battle (not saved; 0 after a reload). */

@@ -1,11 +1,10 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config';
-import { createCreature, validateCreatureData, type CreatureData } from '../logic/creatures';
+import { validateCreatureData, type CreatureData } from '../logic/creatures';
 import { validateAreas } from '../logic/encounters';
-import { newGame } from '../logic/gameState';
 import { browserStore, loadGame, requestPersistentStorage } from '../logic/save';
 import { AREAS, MAPS } from '../data/maps';
-import { creatureTexture, publicUrl, Session, setSession } from '../session';
+import { creatureTexture, publicUrl, type BootResult } from '../session';
 import { FONT } from '../ui/Button';
 import { makeTextures } from './textures';
 
@@ -64,12 +63,9 @@ export class BootScene extends Phaser.Scene {
     const store = browserStore();
     const loaded = loadGame(store, data);
     if (loaded.problem) console.warn(`VanMon: ${loaded.problem}`);
-    // Until the title/starter screens exist (task 15), a new game starts with the first creature.
-    const state = loaded.state ?? newGame(createCreature(data.species[0], 5));
-    const s = new Session(data, state, store);
-    s.canSave = !loaded.protectSave;
-    setSession(s);
-    this.scene.start('Overworld');
+    const boot: BootResult = { data, store, loaded };
+    this.registry.set('boot', boot);
+    this.scene.start('Title');
   }
 
   /** For a parent who edited creatures.json: say what's wrong instead of a blank screen. */
