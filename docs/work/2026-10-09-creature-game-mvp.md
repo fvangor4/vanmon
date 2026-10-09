@@ -96,13 +96,16 @@ rigor:
       (`xcode-select -p` = /Library/Developer/CommandLineTools), no Xcode.
       Verification uses the browser pane at iPad size with touch emulation;
       final real-device check is done by the user.
-- [ ] Current stable Phaser 3.x / vite-plugin-pwa versions → check npm at task 1.
+- [x] Package versions → pinned exact, each ≥2 weeks old: phaser 3.90.0 (final v3;
+      Phaser 4.2.1 exists but plan says 3), vite 8.3.1, vitest 5.0.1, typescript 7.0.2,
+      jsdom 30.1.1. Node v26.11.1 via Homebrew. vite-plugin-pwa: check vite 8 peer at task 17.
 
 ## Tasks
-- [ ] 1. Scaffold: install Node, git init, Vite + TS + Phaser + Vitest, landscape
+- [~] 1. Scaffold: install Node, git init, Vite + TS + Phaser + Vitest, landscape
       FIT config (1024×768 logical), Boot scene showing "VanMon", smoke test.
       files: package.json, tsconfig.json, vite.config.ts, index.html, src/main.ts,
              src/scenes/BootScene.ts, src/logic/smoke.test.ts, .gitignore
+      commits: [259bd4c]
 - [ ] 2. Creature + move data model, JSON validation, create-instance-at-level;
       6 mock creatures in JSON.
       files: src/logic/creatures.ts, src/logic/creatures.test.ts, public/data/creatures.json
@@ -152,3 +155,4 @@ rigor:
 - Note: scene tasks (13–16) keep `tests: tdd` by putting their decision logic in
   tested `src/logic/` modules; rendering itself is verified in the browser pane.
 - 2026-10-09: approved by human (rigor unchanged: per-task spec+code). base = 64a3c77 (initial commit holding this plan).
+- task 1: implemented. Added src/config.ts (logical size constants, so the smoke test has a pure module to import) and .claude/launch.json (dev server for browser pane) beyond the named files. Browser pane at 1180×820 renders "VanMon", no console errors; build green.
