@@ -14,6 +14,8 @@ export class DialogBox extends Phaser.GameObjects.Container {
   private arrow: Phaser.GameObjects.Text;
   private current = '';
   private resolve: (() => void) | null = null;
+  /** Only a tap that started on the box continues it (not a slide off a button). */
+  private pressed = false;
 
   constructor(scene: Phaser.Scene) {
     super(scene, GAME_WIDTH / 2, GAME_HEIGHT - BOX_H / 2 - 20);
@@ -40,19 +42,33 @@ export class DialogBox extends Phaser.GameObjects.Container {
       height: 100,
       onTap: () => speaker.say(this.current),
     });
-    // The speaker sits inside the box; stop its tap from also closing the box.
-    speak.on('pointerup', (_p: Phaser.Input.Pointer, _x: number, _y: number, e: Phaser.Types.Input.EventData) => e.stopPropagation());
+    // Phaser sends a tap only to the topmost object (topOnly), and the speaker
+    // is drawn above the box, so tapping it reads aloud without closing the box.
 
     this.add([bg, this.text, this.arrow, speak]);
     this.setSize(BOX_W, BOX_H);
     this.setInteractive();
-    this.on('pointerup', () => this.finish());
+    this.on('pointerdown', () => (this.pressed = true));
+    this.on('pointerout', () => (this.pressed = false));
+    this.on('pointerup', () => {
+      if (!this.pressed) return;
+      this.pressed = false;
+      speaker.stop();
+      this.finish();
+    });
     this.setDepth(1000).setVisible(false);
     scene.add.existing(this);
   }
 
-  /** Shows a message and resolves when the player taps the box. */
+  /**
+   * Shows a message and resolves when the player taps the box. Each scene runs
+   * one message sequence at a time; a new show() replaces the old message and
+   * resolves its promise.
+   * `speak` reads it aloud right away; that only works after the player's first
+   * tap (iOS rule), which the title screen's "tap to play" takes care of.
+   */
   show(text: string, opts: { speak?: boolean; waitForTap?: boolean } = {}): Promise<void> {
+    speaker.stop();
     this.finish();
     this.current = text;
     this.text.setText(text);
@@ -64,6 +80,7 @@ export class DialogBox extends Phaser.GameObjects.Container {
   }
 
   hide(): void {
+    speaker.stop();
     this.finish();
     this.setVisible(false);
   }

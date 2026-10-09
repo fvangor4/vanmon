@@ -9,12 +9,17 @@ class FakeUtterance {
   constructor(public text: string) {}
 }
 
-function fakeSynth(voices: { name: string; lang: string }[] = []): SpeechSynthLike & { spoken: FakeUtterance[] } {
+function fakeSynth(voices: { name: string; lang: string }[] = []): SpeechSynthLike & { spoken: FakeUtterance[]; calls: string[] } {
   const spoken: FakeUtterance[] = [];
+  const calls: string[] = [];
   return {
     spoken,
-    speak: vi.fn((u: FakeUtterance) => void spoken.push(u)) as any,
-    cancel: vi.fn(),
+    calls,
+    speak: vi.fn((u: FakeUtterance) => {
+      calls.push(`speak:${u.text}`);
+      spoken.push(u);
+    }) as any,
+    cancel: vi.fn(() => void calls.push('cancel')),
     getVoices: () => voices as any,
   };
 }
@@ -35,8 +40,7 @@ describe('createSpeaker', () => {
     const speaker = createSpeaker({ synth, Utterance: FakeUtterance as any });
     speaker.say('one');
     speaker.say('two');
-    expect(synth.cancel).toHaveBeenCalledTimes(2);
-    expect(synth.spoken.map((u) => u.text)).toEqual(['one', 'two']);
+    expect(synth.calls).toEqual(['cancel', 'speak:one', 'cancel', 'speak:two']);
   });
 
   it('prefers a friendly English voice when one is installed', () => {
@@ -50,6 +54,22 @@ describe('createSpeaker', () => {
     expect((synth.spoken[0].voice as any).name).toBe('Samantha');
   });
 
+  it('follows the preference order and ignores non-English voices with a preferred name', () => {
+    const synth = fakeSynth([
+      { name: 'Samantha', lang: 'es-ES' },
+      { name: 'Karen', lang: 'en-AU' },
+      { name: 'Moira', lang: 'en-IE' },
+    ]);
+    createSpeaker({ synth, Utterance: FakeUtterance as any }).say('hi');
+    expect((synth.spoken[0].voice as any).name).toBe('Karen');
+  });
+
+  it('prefers American English over other English in the fallback', () => {
+    const synth = fakeSynth([{ name: 'Daniel', lang: 'en-GB' }, { name: 'Fred', lang: 'en-US' }]);
+    createSpeaker({ synth, Utterance: FakeUtterance as any }).say('hi');
+    expect((synth.spoken[0].voice as any).name).toBe('Fred');
+  });
+
   it('falls back to any English voice, then to the default', () => {
     const en = fakeSynth([{ name: 'Fr', lang: 'fr-FR' }, { name: 'Daniel', lang: 'en-GB' }]);
     createSpeaker({ synth: en, Utterance: FakeUtterance as any }).say('hi');
@@ -61,8 +81,10 @@ describe('createSpeaker', () => {
 
   it('strips emoji so the voice does not read their names', () => {
     const synth = fakeSynth();
-    createSpeaker({ synth, Utterance: FakeUtterance as any }).say('🔥 Super effective! ⭐');
-    expect(synth.spoken[0].text).toBe('Super effective!');
+    const speaker = createSpeaker({ synth, Utterance: FakeUtterance as any });
+    speaker.say('🔥 Super effective! ⭐');
+    speaker.say('👋🏽 Hi 🇺🇸 friend 1️⃣ 👨‍👩‍👧');
+    expect(synth.spoken.map((u) => u.text)).toEqual(['Super effective!', 'Hi friend 1']);
   });
 
   it('does nothing (and does not throw) where speech is not available', () => {

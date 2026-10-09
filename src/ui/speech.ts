@@ -17,8 +17,8 @@ export interface Speaker {
 /** Friendly-sounding iOS/macOS English voices, best first. */
 const PREFERRED_VOICES = ['Samantha', 'Karen', 'Moira', 'Tessa'];
 
-// Emoji and other pictographs (and the joiners/variation selectors between them).
-const EMOJI = /[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu;
+// Emoji, skin tones, flags, keycaps, and the joiners/variation selectors between them.
+const EMOJI = /[\p{Extended_Pictographic}\p{Emoji_Modifier}\p{Regional_Indicator}\u{FE0F}\u{200D}\u{20E3}]/gu;
 
 function pickVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
   for (const name of PREFERRED_VOICES) {
@@ -39,6 +39,8 @@ export function createSpeaker(
 ): Speaker {
   const { synth, Utterance } = env;
   if (!synth || !Utterance) return { supported: false, say() {}, stop() {} };
+  // Some browsers load voices lazily; asking once early helps the first line get the nice voice.
+  synth.getVoices();
 
   return {
     supported: true,

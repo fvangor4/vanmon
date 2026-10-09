@@ -28,8 +28,12 @@ export interface ButtonOptions {
 }
 
 export class BigButton extends Phaser.GameObjects.Container {
+  /** What shrinks when pressed. The button itself keeps its size, so its tap area never shrinks. */
+  private face: Phaser.GameObjects.Container;
   private bg: Phaser.GameObjects.Graphics;
   private enabled = true;
+  /** True only between a press that started on this button and its release. */
+  private pressed = false;
   private readonly bw: number;
   private readonly bh: number;
   private readonly fill: number;
@@ -46,7 +50,7 @@ export class BigButton extends Phaser.GameObjects.Container {
     const icon = scene.add
       .text(hasLabel ? -this.bw / 2 + 48 : 0, 0, opts.icon, { fontFamily: FONT, fontSize: `${Math.round(this.bh * 0.45)}px` })
       .setOrigin(0.5);
-    this.add([this.bg, icon]);
+    this.face = scene.add.container(0, 0, [this.bg, icon]);
     if (hasLabel) {
       const label = scene.add
         .text(-this.bw / 2 + 88, 0, opts.label!, {
@@ -58,29 +62,40 @@ export class BigButton extends Phaser.GameObjects.Container {
           strokeThickness: 4,
         })
         .setOrigin(0, 0.5);
-      this.add(label);
+      this.face.add(label);
     }
+    this.add(this.face);
 
     this.setSize(this.bw, this.bh);
     this.setInteractive({ useHandCursor: true });
-    this.on('pointerdown', () => this.enabled && this.press(true));
-    this.on('pointerout', () => this.press(false));
-    this.on('pointerup', () => {
+    this.on('pointerdown', () => {
       if (!this.enabled) return;
-      this.press(false);
-      opts.onTap();
+      this.pressed = true;
+      this.show(true);
+    });
+    this.on('pointerout', () => {
+      this.pressed = false;
+      this.show(false);
+    });
+    this.on('pointerup', () => {
+      const wasPressed = this.pressed;
+      this.pressed = false;
+      this.show(false);
+      if (this.enabled && wasPressed) opts.onTap();
     });
     scene.add.existing(this);
   }
 
   setEnabled(enabled: boolean): this {
     this.enabled = enabled;
+    this.pressed = false;
+    this.show(false);
     this.setAlpha(enabled ? 1 : 0.4);
     return this;
   }
 
-  private press(down: boolean): void {
-    this.setScale(down ? 0.94 : 1);
+  private show(down: boolean): void {
+    this.face.setScale(down ? 0.94 : 1);
     this.draw(down);
   }
 
