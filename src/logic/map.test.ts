@@ -80,17 +80,25 @@ describe('findPath', () => {
     const m = parseMap(def(['T..', '...', 'T..'], { warps: [{ x: 1, y: 0, to: 'x', toX: 0, toY: 0 }] }));
     // tapping the tree next to the warp stops beside it, not on it
     expect(findPath(m, { x: 2, y: 1 }, { x: 0, y: 0 })).not.toContainEqual({ x: 1, y: 0 });
-    // a path that would be shortest through the warp goes around it
-    const around = parseMap(def(['...', 'T.T'], { warps: [{ x: 1, y: 0, to: 'x', toX: 0, toY: 0 }] }));
-    expect(findPath(around, { x: 0, y: 0 }, { x: 2, y: 0 })).toEqual([]);
+    // a path that would be shortest through the warp detours around it
+    const around = parseMap(def(['...', '...'], { warps: [{ x: 1, y: 0, to: 'x', toX: 0, toY: 0 }] }));
+    expect(findPath(around, { x: 0, y: 0 }, { x: 2, y: 0 })).toEqual([
+      { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 }, { x: 2, y: 0 },
+    ]);
+    // ...and with no way around, you stay put rather than step on it
+    const blocked = parseMap(def(['...', 'T.T'], { warps: [{ x: 1, y: 0, to: 'x', toX: 0, toY: 0 }] }));
+    expect(findPath(blocked, { x: 0, y: 0 }, { x: 2, y: 0 })).toEqual([]);
+    // a tap just off the map beside an exit doesn't count as tapping the exit
+    const edge = parseMap(def(['.T.', '...'], { warps: [{ x: 0, y: 0, to: 'x', toX: 0, toY: 0 }] }));
+    expect(findPath(edge, { x: 0, y: 1 }, { x: -1, y: 0 })).not.toContainEqual({ x: 0, y: 0 });
     // tapping the warp walks onto it
     expect(findPath(m, { x: 2, y: 1 }, { x: 1, y: 0 }).at(-1)).toEqual({ x: 1, y: 0 });
   });
 
   it('refuses to start from a tile you could not be standing on', () => {
     const m = parseMap(def(['.T.']));
-    expect(() => findPath(m, { x: 1, y: 0 }, { x: 0, y: 0 })).toThrow();
-    expect(() => findPath(m, { x: -1, y: 0 }, { x: 0, y: 0 })).toThrow();
+    expect(() => findPath(m, { x: 1, y: 0 }, { x: 0, y: 0 })).toThrow(/can't start/);
+    expect(() => findPath(m, { x: -1, y: 0 }, { x: 0, y: 0 })).toThrow(/can't start/);
   });
 
   it('returns no steps when nothing closer is reachable', () => {
@@ -115,7 +123,10 @@ describe('game maps', () => {
 
   it('nobody arrives standing on a warp (no ping-pong between maps)', () => {
     for (const d of Object.values(MAPS)) {
-      for (const w of d.warps) expect(parseMap(MAPS[w.to]).warpAt(w.toX, w.toY), `${d.id} → ${w.to}`).toBeUndefined();
+      for (const w of d.warps) {
+        expect(MAPS[w.to], `${d.id} warp to ${w.to}`).toBeDefined();
+        expect(parseMap(MAPS[w.to]).warpAt(w.toX, w.toY), `${d.id} → ${w.to}`).toBeUndefined();
+      }
     }
   });
 

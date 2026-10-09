@@ -122,6 +122,8 @@ export function findPath(map: GameMap, from: Point, tapped: Point): Point[] {
 
   const isGoal = (p: Point) => p.x === goal.x && p.y === goal.y;
   const isWarp = (p: Point) => map.warpAt(p.x, p.y) !== undefined;
+  // A tap off the edge is clamped onto the map, but must not count as tapping an exit.
+  const tappedInside = tapped.x === goal.x && tapped.y === goal.y;
 
   for (let i = 0; i < queue.length; i++) {
     const cur = queue[i];
@@ -135,7 +137,7 @@ export function findPath(map: GameMap, from: Point, tapped: Point): Point[] {
     for (const s of STEPS) {
       const next = { x: cur.x + s.x, y: cur.y + s.y };
       if (!map.isWalkable(next.x, next.y) || cameFrom.has(key(next))) continue;
-      if (isWarp(next) && !isGoal(next)) continue;
+      if (isWarp(next) && !(tappedInside && isGoal(next))) continue;
       cameFrom.set(key(next), cur);
       queue.push(next);
     }
