@@ -122,13 +122,14 @@ rigor:
 - [x] 3. Mock creature art: 6 cute SVG blobs colored by type.
       files: public/creatures/*.svg
       commits: [a178afc, f918bde]
-- [~] 4. Type chart + damage formula (injectable RNG).
+- [x] 4. Type chart + damage formula (injectable RNG).
       files: src/logic/damage.ts, src/logic/damage.test.ts
-      commits: [f4e6525, c4c268d]
-- [ ] 5. Battle engine (pure state machine): fight turn, wild random move,
+      commits: [f4e6525, c4c268d, bfb7f7e]
+- [~] 5. Battle engine (pure state machine): fight turn, wild random move,
       faint, run, swap; emits event list for the scene to play back.
       Wild creatures deal ×0.6 damage (gentle difficulty; see task 4 log).
       files: src/logic/battle.ts, src/logic/battle.test.ts
+      commits: [472b856]
 - [ ] 6. Catch logic in battle engine: wiggle count, HP-scaled chance, fail → wild turn.
       files: src/logic/catch.ts, src/logic/catch.test.ts, src/logic/battle.ts
 - [ ] 7. XP + level-up (stat growth, cap at level 20).
@@ -178,3 +179,5 @@ rigor:
 - task 2 re-review (code): 5 findings — move rule fired on invalid type ("undefined"/"rock" noise), case-insensitive dup test untested, whitespace test masked by capital E, uppercase extensions (IMG_1234.JPG) rejected, untested branches (move missing id, non-array moves, upper bounds/fractions). Fixed in 1b639e9; toLowerCase dropped since ID_PATTERN already forbids capitals. 34 tests. No further re-review (rereview=on-nontrivial, fix was targeted).
 - task 3 review: spec — art.test.ts outside file list (accepted, see above); "colored by type" untested → disagree: color is visual, verified by eye in browser and by reviewer. code — SVG width/height/XML untested → fixed f918bde (verified failing when toastle width/height removed); base-path loader → recorded for task 13/14; glob matches non-images → disagree, IMAGE_PATTERN already limits names.
 - task 4 review: spec — same-type ×1.25 bonus stacked with ×2 made wild type moves 2-shot starters (not "gentle"); anchor used power 45 not the real 35; weak multiplier unpinned. code — min-damage clamp not reached by its test; ±15% roll bound too loose; weak unpinned; rng output unchecked. Fixed c4c268d: same-type bonus removed (kids only need "pick the move that beats their color"), exact anchors (plain 4, neutral type 5, super 11 → 5 hits vs 2 hits on 20 HP), exact roll bounds 35..41, clamp test uses weak+no-bonus+low roll, rng outside [0,1) throws RangeError. Gentleness lever moved to the battle engine: wild damage ×0.6 (added to task 5).
+- task 4 re-review: weak multiplier only loosely pinned on base 5.6; ceil(20/x) asserts tautological. Fixed bfb7f7e (exact ×1/×2/×0.5 on base 42 → 41/83/20). Done.
+- task 5: implemented; 14 tests. Engine copies state each turn (inputs never mutated); events: move/damage/faint/swap/ran/won/lost.
