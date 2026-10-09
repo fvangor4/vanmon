@@ -168,10 +168,10 @@ rigor:
       map transitions, grass → battle, home bed heals, autosave.
       files: src/scenes/OverworldScene.ts, src/scenes/textures.ts, src/main.ts
       commits: [cc463ce, d6dfa5b]
-- [~] 14. Battle scene: plays back engine events, move buttons by type color,
+- [x] 14. Battle scene: plays back engine events, move buttons by type color,
       effectiveness text + read-aloud, catch wiggle animation, win/lose flows.
       files: src/scenes/BattleScene.ts, src/main.ts
-      commits: [d15af9e]
+      commits: [d15af9e, 20628ba]
 - [~] 15. Title + starter pick + hold-to-confirm New Game.
       files: src/scenes/TitleScene.ts, src/scenes/StarterScene.ts, src/ui/HoldButton.ts
       commits: [24b6629]
@@ -225,3 +225,5 @@ rigor:
 - task 14: implemented (d15af9e). Added src/logic/battleText.ts (+8 tests) for all battle messages. Catch ball redrawn as a blue/yellow "buddy ball" with a heart: the first draft was red/white with a band, too close to Nintendo's Poké Ball. Browser-verified: grass encounter → Battle; intro slides wild in, "Go, Emberpup!"; menu (Fight/Catch/Swap greyed with 1 creature/Run); Fight → Bump/Spark type-colored; turn plays (spoken: "Emberpup used Bump!", "The wild Toastle used Flame Dash!"), HP bars animate; Catch → ball throw, wiggles, "Yay! You caught Toastle!" → tap → Overworld; save has party [emberpup, toastle 9/14], book toastle caught; survives reload.
 - task 14 spec review: lose/win/level-up/super-effective not browser-verified → scheduled for the end-to-end pass; battleText.ts outside file list (accepted, per the scene-logic note); window.__game DEV-only exposure → check absence in the production bundle at task 18.
 - task 15: implemented (24b6629). Also: src/ui/hold.ts (+4 tests), src/logic/starters.ts (+2 tests), BootScene now hands {data, store, loaded} to Title via the registry (removes the task 13 stand-in), session.ts BootResult type. HoldButton counts frame deltas, not scene.time.now. Browser-verified: title with a save shows Play + "Hold for New"; quick tap and a 0.7s hold do nothing; a 1.7s hold → "Pick your buddy!"; tapping Puddlefin highlights its card + Yes/No; Yes → Overworld at town (7,5), save = [puddlefin L5], Book {puddlefin: caught}; spoken: "Pick your buddy!", "Puddlefin?", "You and Puddlefin are going on an adventure!".
+- task 14 code review: outcome saved only after the final tap (now saved before playback); double-tap could skip messages (DialogBox ignores taps for 600ms after a message appears); voided act() rejections soft-locked the screen (try/catch → "Oops! Let's head back." → Overworld); failed-catch restore distorted non-square kid PNGs (tween displayWidth/Height); "Your creatures got sleepy" untrue when teammates awake (→ "Time for a nap!"); fallback/icon tests. Swap-name/readingTime unit tests → disagree (thin scene glue, browser-verified). Fixed 20628ba, plus the HP card now shows the new level with a bounce on level-up.
+- task 14 end-to-end browser checks (these close the spec review's gaps): (A) Puddlefin xp 49 vs Emberpup 1 HP → Splash Shot → spoken "Super effective!", "The wild Emberpup is sleepy!", "You won!", "Puddlefin grew to level 6!"; save already had L6 before the animations ended. (B) Puddlefin 1 HP, Box Leafbun 2 HP, on the route vs Leafbun L5 → "Puddlefin is sleepy!", "Time for a nap! Let's go home and rest." → Overworld at town (7,5); save: party 22/22, Box 15/15, same uids, Book unchanged. Done-when #3 (super-effective) and #4 verified. Done.
