@@ -1,0 +1,137 @@
+// Tile maps drawn as text, plus tap-to-walk pathfinding.
+// Each character in a map row is one tile (see TILE_CHARS).
+
+export type TileKind =
+  | 'path'
+  | 'grass'
+  | 'tallGrass'
+  | 'flowers'
+  | 'door'
+  | 'tree'
+  | 'water'
+  | 'house'
+  | 'fence';
+
+export const TILE_CHARS: Record<string, TileKind> = {
+  '.': 'path',
+  ',': 'grass',
+  '"': 'tallGrass',
+  F: 'flowers',
+  D: 'door',
+  T: 'tree',
+  '~': 'water',
+  '#': 'house',
+  '=': 'fence',
+};
+
+const WALKABLE = new Set<TileKind>(['path', 'grass', 'tallGrass', 'flowers', 'door']);
+
+export interface Point {
+  x: number;
+  y: number;
+}
+
+/** Stepping on (x, y) moves the player to (toX, toY) on map `to`. */
+export interface Warp extends Point {
+  to: string;
+  toX: number;
+  toY: number;
+}
+
+export interface MapDef {
+  id: string;
+  name: string;
+  rows: string[];
+  warps: Warp[];
+  /** The home door: stepping on it heals the party. */
+  home?: Point;
+}
+
+export interface GameMap {
+  def: MapDef;
+  width: number;
+  height: number;
+  tileAt(x: number, y: number): TileKind | undefined;
+  isWalkable(x: number, y: number): boolean;
+  warpAt(x: number, y: number): Warp | undefined;
+}
+
+export function parseMap(def: MapDef): GameMap {
+  const height = def.rows.length;
+  const width = def.rows[0]?.length ?? 0;
+  if (height === 0 || width === 0) throw new Error(`map ${def.id}: has no tiles`);
+
+  const tiles: TileKind[][] = def.rows.map((row, y) => {
+    if (row.length !== width) {
+      throw new Error(`map ${def.id}: row ${y + 1} is ${row.length} wide, expected ${width}`);
+    }
+    return [...row].map((ch, x) => {
+      const kind = TILE_CHARS[ch];
+      if (!kind) throw new Error(`map ${def.id}: unknown tile "${ch}" at (${x}, ${y})`);
+      return kind;
+    });
+  });
+
+  const tileAt = (x: number, y: number) => tiles[y]?.[x];
+  const isWalkable = (x: number, y: number) => {
+    const t = tileAt(x, y);
+    return t !== undefined && WALKABLE.has(t);
+  };
+
+  for (const w of def.warps) {
+    if (!isWalkable(w.x, w.y)) throw new Error(`map ${def.id}: warp at (${w.x}, ${w.y}) is not on a walkable tile`);
+  }
+
+  return {
+    def,
+    width,
+    height,
+    tileAt,
+    isWalkable,
+    warpAt: (x, y) => def.warps.find((w) => w.x === x && w.y === y),
+  };
+}
+
+const STEPS: Point[] = [
+  { x: 0, y: -1 },
+  { x: 1, y: 0 },
+  { x: 0, y: 1 },
+  { x: -1, y: 0 },
+];
+
+/**
+ * Shortest up/down/left/right route from `from` to the tapped tile.
+ * If the tapped tile can't be reached (a tree, water), walks to the reachable
+ * tile closest to it instead. Returns the steps after `from`; [] if none.
+ */
+export function findPath(map: GameMap, from: Point, tapped: Point): Point[] {
+  const goal = {
+    x: Math.min(map.width - 1, Math.max(0, tapped.x)),
+    y: Math.min(map.height - 1, Math.max(0, tapped.y)),
+  };
+  const key = (p: Point) => p.y * map.width + p.x;
+  const cameFrom = new Map<number, Point | null>([[key(from), null]]);
+  const queue: Point[] = [from];
+  let best = from;
+  const distToGoal = (p: Point) => Math.abs(p.x - goal.x) + Math.abs(p.y - goal.y);
+
+  for (let i = 0; i < queue.length; i++) {
+    const cur = queue[i];
+    // BFS visits in order of steps taken, so the first tile at a given goal
+    // distance is also the nearest one to walk to.
+    if (distToGoal(cur) < distToGoal(best)) best = cur;
+    if (distToGoal(cur) === 0) break;
+    for (const s of STEPS) {
+      const next = { x: cur.x + s.x, y: cur.y + s.y };
+      if (!map.isWalkable(next.x, next.y) || cameFrom.has(key(next))) continue;
+      cameFrom.set(key(next), cur);
+      queue.push(next);
+    }
+  }
+
+  const path: Point[] = [];
+  for (let p: Point | null = best; p && key(p) !== key(from); p = cameFrom.get(key(p)) ?? null) {
+    path.unshift(p);
+  }
+  return path;
+}
