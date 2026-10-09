@@ -102,9 +102,14 @@ const STEPS: Point[] = [
 /**
  * Shortest up/down/left/right route from `from` to the tapped tile.
  * If the tapped tile can't be reached (a tree, water), walks to the reachable
- * tile closest to it instead. Returns the steps after `from`; [] if none.
+ * tile closest to it instead. Warp tiles (exits) are only walked onto when
+ * tapped directly, so a tap near an exit never sends a kid somewhere new.
+ * Returns the steps after `from`; [] if none.
  */
 export function findPath(map: GameMap, from: Point, tapped: Point): Point[] {
+  if (!map.isWalkable(from.x, from.y)) {
+    throw new Error(`map ${map.def.id}: can't start a path from (${from.x}, ${from.y})`);
+  }
   const goal = {
     x: Math.min(map.width - 1, Math.max(0, tapped.x)),
     y: Math.min(map.height - 1, Math.max(0, tapped.y)),
@@ -115,15 +120,22 @@ export function findPath(map: GameMap, from: Point, tapped: Point): Point[] {
   let best = from;
   const distToGoal = (p: Point) => Math.abs(p.x - goal.x) + Math.abs(p.y - goal.y);
 
+  const isGoal = (p: Point) => p.x === goal.x && p.y === goal.y;
+  const isWarp = (p: Point) => map.warpAt(p.x, p.y) !== undefined;
+
   for (let i = 0; i < queue.length; i++) {
     const cur = queue[i];
+    if (isGoal(cur)) {
+      best = cur;
+      break;
+    }
     // BFS visits in order of steps taken, so the first tile at a given goal
     // distance is also the nearest one to walk to.
     if (distToGoal(cur) < distToGoal(best)) best = cur;
-    if (distToGoal(cur) === 0) break;
     for (const s of STEPS) {
       const next = { x: cur.x + s.x, y: cur.y + s.y };
       if (!map.isWalkable(next.x, next.y) || cameFrom.has(key(next))) continue;
+      if (isWarp(next) && !isGoal(next)) continue;
       cameFrom.set(key(next), cur);
       queue.push(next);
     }

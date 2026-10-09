@@ -25,6 +25,11 @@ describe('parseMap', () => {
     expect(m.tileAt(0, 1)).toBe('tallGrass');
   });
 
+  it('rejects an empty map', () => {
+    expect(() => parseMap(def([]))).toThrow(/no tiles/);
+    expect(() => parseMap(def(['']))).toThrow(/no tiles/);
+  });
+
   it('rejects ragged rows, unknown tiles, and warps on blocked tiles', () => {
     expect(() => parseMap(def(['...', '..']))).toThrow(/row 2/);
     expect(() => parseMap(def(['.?.']))).toThrow(/"\?"/);
@@ -65,10 +70,27 @@ describe('findPath', () => {
     }
   });
 
-  it('tapping a tree or water walks to the closest reachable spot next to it', () => {
-    const m = parseMap(def(['....', '..~~', '..~~']));
-    const path = findPath(m, { x: 0, y: 0 }, { x: 3, y: 2 });
-    expect(path.at(-1)).toEqual({ x: 3, y: 0 });
+  it('tapping a tree or water walks to the reachable spot closest to it', () => {
+    // (5,3) is the only reachable tile right next to the tapped water at (4,3)
+    const m = parseMap(def(['......', '.~~~~.', '.~~~~.', '.~~~~.', 'TTTTTT']));
+    expect(findPath(m, { x: 0, y: 0 }, { x: 4, y: 3 }).at(-1)).toEqual({ x: 5, y: 3 });
+  });
+
+  it('never walks through or ends on a warp unless the warp itself was tapped', () => {
+    const m = parseMap(def(['T..', '...', 'T..'], { warps: [{ x: 1, y: 0, to: 'x', toX: 0, toY: 0 }] }));
+    // tapping the tree next to the warp stops beside it, not on it
+    expect(findPath(m, { x: 2, y: 1 }, { x: 0, y: 0 })).not.toContainEqual({ x: 1, y: 0 });
+    // a path that would be shortest through the warp goes around it
+    const around = parseMap(def(['...', 'T.T'], { warps: [{ x: 1, y: 0, to: 'x', toX: 0, toY: 0 }] }));
+    expect(findPath(around, { x: 0, y: 0 }, { x: 2, y: 0 })).toEqual([]);
+    // tapping the warp walks onto it
+    expect(findPath(m, { x: 2, y: 1 }, { x: 1, y: 0 }).at(-1)).toEqual({ x: 1, y: 0 });
+  });
+
+  it('refuses to start from a tile you could not be standing on', () => {
+    const m = parseMap(def(['.T.']));
+    expect(() => findPath(m, { x: 1, y: 0 }, { x: 0, y: 0 })).toThrow();
+    expect(() => findPath(m, { x: -1, y: 0 }, { x: 0, y: 0 })).toThrow();
   });
 
   it('returns no steps when nothing closer is reachable', () => {
@@ -85,6 +107,16 @@ describe('game maps', () => {
   it('all parse, and the start spot is walkable', () => {
     for (const d of Object.values(MAPS)) parseMap(d);
     expect(parseMap(MAPS[START.map]).isWalkable(START.x, START.y)).toBe(true);
+  });
+
+  it('each map is listed under its own id', () => {
+    for (const [key, d] of Object.entries(MAPS)) expect(d.id).toBe(key);
+  });
+
+  it('nobody arrives standing on a warp (no ping-pong between maps)', () => {
+    for (const d of Object.values(MAPS)) {
+      for (const w of d.warps) expect(parseMap(MAPS[w.to]).warpAt(w.toX, w.toY), `${d.id} → ${w.to}`).toBeUndefined();
+    }
   });
 
   it('every warp lands on a walkable tile of an existing map, and has a way back', () => {
