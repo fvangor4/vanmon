@@ -128,7 +128,7 @@ describe('applyBattleOutcome', () => {
   });
 
   it('won: keeps HP from the battle, marks the wild species seen, and gives XP to the creature that fought', () => {
-    const g = withParty([mon('firey'), mon('watery')]);
+    const g = withParty([mon('firey'), mon('firey')]);
     const wild = mon('watery', 5, 0);
     const b = finished(g, wild, { activeIndex: 1, outcome: 'won', wild });
     b.party[1] = { ...b.party[1], hp: 7 };
