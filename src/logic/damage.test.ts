@@ -5,7 +5,7 @@ const fixed = (n: number) => () => n;
 
 function input(overrides: Partial<DamageInput> = {}): DamageInput {
   return {
-    attacker: { level: 5, attack: 10, type: 'fire' },
+    attacker: { level: 5, attack: 10 },
     defender: { defense: 10, type: 'fire' },
     move: { type: 'normal', power: 45 },
     rng: fixed(0.999),
@@ -34,48 +34,60 @@ describe('effectiveness (fire > leaf > water > fire)', () => {
 });
 
 describe('calcDamage', () => {
-  it('lands the balance anchor: level 5 normal move, equal stats ≈ 5 damage (≈4 hits on 20 HP)', () => {
-    expect(calcDamage(input()).damage).toBe(5);
+  it('lands the balance anchor at level 5 with equal stats vs a 20 HP creature', () => {
+    const plain = calcDamage(input({ move: { type: 'normal', power: 35 } })).damage; // Bump/Bonk/Swipe
+    const typed = calcDamage(input({ move: { type: 'water', power: 45 }, defender: { defense: 10, type: 'water' } })).damage; // type move, neutral
+    const superHit = calcDamage(input({ move: { type: 'water', power: 50 } })).damage; // water on fire
+    expect(plain).toBe(4);
+    expect(typed).toBe(5);
+    expect(superHit).toBe(11);
+    expect(Math.ceil(20 / plain)).toBe(5); // plain move: 5 hits
+    expect(Math.ceil(20 / superHit)).toBe(2); // super effective: 2 hits
   });
 
   it('doubles-ish for super effective and halves-ish for weak', () => {
-    const plain = calcDamage(input({ move: { type: 'water', power: 45 }, attacker: { level: 5, attack: 10, type: 'fire' }, defender: { defense: 10, type: 'water' } }));
-    const sup = calcDamage(input({ move: { type: 'water', power: 45 }, attacker: { level: 5, attack: 10, type: 'fire' }, defender: { defense: 10, type: 'fire' } }));
-    const weak = calcDamage(input({ move: { type: 'water', power: 45 }, attacker: { level: 5, attack: 10, type: 'fire' }, defender: { defense: 10, type: 'leaf' } }));
+    const plain = calcDamage(input({ move: { type: 'water', power: 45 }, attacker: { level: 5, attack: 10 }, defender: { defense: 10, type: 'water' } }));
+    const sup = calcDamage(input({ move: { type: 'water', power: 45 }, attacker: { level: 5, attack: 10 }, defender: { defense: 10, type: 'fire' } }));
+    const weak = calcDamage(input({ move: { type: 'water', power: 45 }, attacker: { level: 5, attack: 10 }, defender: { defense: 10, type: 'leaf' } }));
     expect(sup.effectiveness).toBe('super');
     expect(weak.effectiveness).toBe('weak');
     expect(plain.effectiveness).toBe('normal');
-    expect(sup.damage).toBeGreaterThanOrEqual(plain.damage * 2 - 1);
-    expect(weak.damage).toBeLessThan(plain.damage);
+    // base 5.6 at a top roll: plain 5, super ×2 = 11, weak ×0.5 = 2
+    expect(plain.damage).toBe(5);
+    expect(sup.damage).toBe(11);
+    expect(weak.damage).toBe(2);
   });
 
-  it('gives a bonus when the move matches the attacker type', () => {
-    const own = calcDamage(input({ move: { type: 'fire', power: 45 } }));
-    const other = calcDamage(input({ move: { type: 'normal', power: 45 } }));
-    expect(own.damage).toBeGreaterThan(other.damage);
-  });
 
   it('grows with level, attack and power; shrinks with defense', () => {
     const base = calcDamage(input()).damage;
-    expect(calcDamage(input({ attacker: { level: 20, attack: 10, type: 'fire' } })).damage).toBeGreaterThan(base);
-    expect(calcDamage(input({ attacker: { level: 5, attack: 20, type: 'fire' } })).damage).toBeGreaterThan(base);
+    expect(calcDamage(input({ attacker: { level: 20, attack: 10 } })).damage).toBeGreaterThan(base);
+    expect(calcDamage(input({ attacker: { level: 5, attack: 20 } })).damage).toBeGreaterThan(base);
     expect(calcDamage(input({ move: { type: 'normal', power: 90 } })).damage).toBeGreaterThan(base);
     expect(calcDamage(input({ defender: { defense: 30, type: 'fire' } })).damage).toBeLessThan(base);
   });
 
   it('varies by at most 15% with the random roll', () => {
-    const big = { attacker: { level: 20, attack: 40, type: 'fire' as const }, move: { type: 'normal' as const, power: 50 } };
+    const big = { attacker: { level: 20, attack: 40 }, move: { type: 'normal' as const, power: 50 } };
     const high = calcDamage(input({ ...big, rng: fixed(0.999) })).damage;
     const low = calcDamage(input({ ...big, rng: fixed(0) })).damage;
-    expect(low).toBeLessThan(high);
-    expect(low).toBeGreaterThanOrEqual(Math.floor(high * 0.85) - 1);
+    // base 42: top roll ×0.99985 → 41, bottom roll ×0.85 → 35
+    expect(high).toBe(41);
+    expect(low).toBe(35);
   });
 
   it('always does at least 1 whole point of damage', () => {
-    const r = calcDamage(input({ attacker: { level: 1, attack: 1, type: 'fire' }, defender: { defense: 200, type: 'water' }, move: { type: 'fire', power: 1 }, rng: fixed(0) }));
+    // weak move, no same-type bonus, low roll: 2 × 0.5 × 0.85 = 0.85 would floor to 0
+    const r = calcDamage(input({ attacker: { level: 1, attack: 1 }, defender: { defense: 200, type: 'water' }, move: { type: 'fire', power: 1 }, rng: fixed(0) }));
     expect(r.damage).toBe(1);
     for (const n of [0, 0.3, 0.7, 0.999]) {
       expect(Number.isInteger(calcDamage(input({ rng: fixed(n) })).damage)).toBe(true);
+    }
+  });
+
+  it('refuses an rng that returns something outside [0, 1)', () => {
+    for (const bad of [Number.NaN, 1, -0.1, 7]) {
+      expect(() => calcDamage(input({ rng: fixed(bad) }))).toThrow(RangeError);
     }
   });
 });
