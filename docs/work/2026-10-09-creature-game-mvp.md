@@ -172,11 +172,12 @@ rigor:
       effectiveness text + read-aloud, catch wiggle animation, win/lose flows.
       files: src/scenes/BattleScene.ts, src/main.ts
       commits: [d15af9e, 20628ba]
-- [~] 15. Title + starter pick + hold-to-confirm New Game.
+- [x] 15. Title + starter pick + hold-to-confirm New Game.
       files: src/scenes/TitleScene.ts, src/scenes/StarterScene.ts, src/ui/HoldButton.ts
-      commits: [24b6629]
-- [ ] 16. Menus: Party (swap lead), Box (at home), Creature Book.
+      commits: [24b6629, 5acff29]
+- [~] 16. Menus: Party (swap lead), Box (at home), Creature Book.
       files: src/scenes/PartyScene.ts, src/scenes/BoxScene.ts, src/scenes/BookScene.ts
+      commits: [bde819a]
 - [ ] 17. PWA: manifest, icons, Apple meta tags, offline service worker, rotate prompt.
       files: vite.config.ts, index.html, public/icons/*, src/ui/rotatePrompt.ts
 - [ ] 18. Deploy: GitHub Actions → Pages, remote + push, README,
@@ -227,3 +228,5 @@ rigor:
 - task 15: implemented (24b6629). Also: src/ui/hold.ts (+4 tests), src/logic/starters.ts (+2 tests), BootScene now hands {data, store, loaded} to Title via the registry (removes the task 13 stand-in), session.ts BootResult type. HoldButton counts frame deltas, not scene.time.now. Browser-verified: title with a save shows Play + "Hold for New"; quick tap and a 0.7s hold do nothing; a 1.7s hold → "Pick your buddy!"; tapping Puddlefin highlights its card + Yes/No; Yes → Overworld at town (7,5), save = [puddlefin L5], Book {puddlefin: caught}; spoken: "Pick your buddy!", "Puddlefin?", "You and Puddlefin are going on an adventure!".
 - task 14 code review: outcome saved only after the final tap (now saved before playback); double-tap could skip messages (DialogBox ignores taps for 600ms after a message appears); voided act() rejections soft-locked the screen (try/catch → "Oops! Let's head back." → Overworld); failed-catch restore distorted non-square kid PNGs (tween displayWidth/Height); "Your creatures got sleepy" untrue when teammates awake (→ "Time for a nap!"); fallback/icon tests. Swap-name/readingTime unit tests → disagree (thin scene glue, browser-verified). Fixed 20628ba, plus the HP card now shows the new level with a bounce on level-up.
 - task 14 end-to-end browser checks (these close the spec review's gaps): (A) Puddlefin xp 49 vs Emberpup 1 HP → Splash Shot → spoken "Super effective!", "The wild Emberpup is sleepy!", "You won!", "Puddlefin grew to level 6!"; save already had L6 before the animations ended. (B) Puddlefin 1 HP, Box Leafbun 2 HP, on the route vs Leafbun L5 → "Puddlefin is sleepy!", "Time for a nap! Let's go home and rest." → Overworld at town (7,5); save: party 22/22, Box 15/15, same uids, Book unchanged. Done-when #3 (super-effective) and #4 verified. Done.
+- task 15 review: spec — no explicit iOS speech unlock (the hold path speaks from the update tick, not a gesture) → unlockSpeechOnFirstTouch(document) silently speaks once on the first touch/click (tested); the buddy screen had no replay → 🔊 button added. code — no way back after a hold (⬅️ to Title added; verified); New Game overwrote the old save with no copy (backupCurrentSave before overwriting, tested); tween creep on repeated taps (kill + reset); Title tests (→ disagree: scene glue, browser-verified); second-hold test added; starters test now uses an inline fixture; Title centering by count; HoldButton honors setEnabled. Fixed 5acff29. 202 tests. Done.
+- task 16: implemented (bde819a). Added src/logic/menus.ts (+4 tests: book entries/progress, paging), src/ui/CreatureCard.ts, src/scenes/menuBase.ts (overlay frame + ❌, pauses/resumes Overworld, saves on close), and HUD buttons in the Overworld (🎒 Party, 📖 Book, 📦 Box in Home Town only). Browser-verified: Box shows Team (1/6) + Resting (1), tap Leafbun → "Leafbun joined your team!" and the save party = [puddlefin, leafbun]; ❌ resumes the Overworld; Party: tap Leafbun → "Leafbun will go first!", save order [leafbun, puddlefin]; Book "2/6": Emberpup shadow "Emberpup?", Puddlefin/Leafbun in color, ❓ for unmet; tap Puddlefin → big view + "Puddlefin! A Water creature." Layout fixes during verification: party cards fit the panel, level moved onto the name line.
