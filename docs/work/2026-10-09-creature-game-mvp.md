@@ -100,6 +100,11 @@ rigor:
       Phaser 4.2.1 exists but plan says 3), vite 8.3.1, vitest 5.0.1, typescript 7.0.2,
       jsdom 30.1.1. Node v26.11.1 via Homebrew. vite-plugin-pwa: check vite 8 peer at task 17.
 
+- [x] Saved creatures vs edited creatures.json (from task 2 review) → decision:
+      task 9 load must recompute maxHp/attack/defense from species + level
+      (clamping hp), and drop creatures whose speciesId no longer exists
+      (logging them into the backup key), so parent edits never break a save.
+
 ## Tasks
 - [x] 1. Scaffold: install Node, git init, Vite + TS + Phaser + Vitest, landscape
       FIT config (1024×768 logical), Boot scene showing "VanMon", smoke test.
@@ -109,9 +114,10 @@ rigor:
 - [~] 2. Creature + move data model, JSON validation, create-instance-at-level;
       6 mock creatures in JSON.
       files: src/logic/creatures.ts, src/logic/creatures.test.ts, public/data/creatures.json
-      commits: [1d48593]
-- [ ] 3. Mock creature art: 6 cute SVG blobs colored by type.
+      commits: [1d48593, b262dc3]
+- [~] 3. Mock creature art: 6 cute SVG blobs colored by type.
       files: public/creatures/*.svg
+      commits: [a178afc]
 - [ ] 4. Type chart + damage formula (injectable RNG).
       files: src/logic/damage.ts, src/logic/damage.test.ts
 - [ ] 5. Battle engine (pure state machine): fight turn, wild random move,
@@ -160,3 +166,6 @@ rigor:
 - task 1 review: spec findings (extra files config.ts + launch.json; unused jsdom; smoke test overclaims) and code findings (tautological smoke test; `vite preview` base mismatch; launch.json port not strict; jsdom dead dep; iOS ignores user-scalable=no). Fixed in 91c3b46: base keyed on mode (preview now serves /vanmon/assets JS as text/javascript, verified with curl), `--strictPort`, jsdom removed, touch-action on canvas + gesturestart preventDefault.
 - task 1 disagreement: smoke test deleted rather than strengthened — Phaser can't load under Node, so FIT config / Boot text are verified in the browser pane (screenshot showed "VanMon", no console errors). Extra files config.ts and launch.json kept (justified above). Re-review skipped (rereview=on-nontrivial; fixes mechanical).
 - task 2: implemented; 14 tests pass, typecheck clean. Stat formula: hp=floor(b*L/50)+L+10, atk/def=floor(b*L/50)+5.
+- task 2 review: spec — no normal+type move rule; real Pokémon move names (Tackle/Scratch/Ember). code — 11 findings (move rule, dup ids incl. undefined noise, non-string move refs, randomUUID needs secure context/iOS 15.4, unchecked level, stale saved stats, untrimmed ids/unknown keys, image name not checked, missing branch coverage, unreachable-in-try, no stat anchor). Fixed in b262dc3 (moves renamed Bump/Swipe/Spark; id + image patterns; level RangeError; getRandomValues uid; problemsOf() test helper; 24 tests).
+- task 2 disagreements: unknown JSON keys stay allowed (kids may add fields like "artist"; a typo'd key next to the valid one is harmless). Stale saved stats → recorded as a task 9 requirement under Unknowns rather than changing the Creature shape now.
+- task 3: implemented. 6 SVGs viewed in browser pane (contact sheet looked right). Added src/logic/art.test.ts (not in file list): fails naming the file when a species' image is missing (checked by temporarily moving leafbun.svg).
