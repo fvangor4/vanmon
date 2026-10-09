@@ -32,7 +32,12 @@ const mon = (id: string, level = 5, hp?: number): Creature => {
   const c = createCreature(sp(id), level);
   return hp === undefined ? c : { ...c, hp };
 };
-const withParty = (party: Creature[], box: Creature[] = []): GameState => ({ ...newGame(party[0]), party, box });
+const withParty = (party: Creature[], box: Creature[] = []): GameState => ({
+  ...newGame(party[0]),
+  party,
+  box,
+  book: Object.fromEntries([...party, ...box].map((c) => [c.speciesId, 'caught' as const])),
+});
 
 describe('newGame', () => {
   it('starts at the start spot with the starter in the party and in the Book as caught', () => {
@@ -106,9 +111,12 @@ describe('party and Box', () => {
   });
 
   it('rejects bad slot numbers', () => {
-    const g = withParty([mon('firey')]);
-    expect(() => setLead(g, 3)).toThrow();
-    expect(() => withdrawFromBox(g, 0)).toThrow();
+    const g = withParty([mon('firey'), mon('watery')], [mon('watery')]);
+    for (const bad of [3, -1, 0.5, Number.NaN]) {
+      expect(() => setLead(g, bad)).toThrow(/slot/);
+      expect(() => depositToBox(g, bad)).toThrow(/slot/);
+      expect(() => withdrawFromBox(g, bad === 3 ? 1 : bad)).toThrow(/slot/);
+    }
   });
 });
 
@@ -143,7 +151,10 @@ describe('applyBattleOutcome', () => {
   it('caught: keeps HP from the battle and adds the wild creature to the collection', () => {
     const g = withParty([mon('firey')]);
     const wild = mon('watery', 3, 2);
-    const { state } = applyBattleOutcome(g, finished(g, wild, { outcome: 'caught', wild }), data);
+    const b = finished(g, wild, { outcome: 'caught', wild });
+    b.party[0] = { ...b.party[0], hp: 6 };
+    const { state } = applyBattleOutcome(g, b, data);
+    expect(state.party[0].hp).toBe(6);
     expect(state.party).toHaveLength(2);
     expect(state.party[1]).toEqual(wild);
     expect(state.book.watery).toBe('caught');
@@ -168,7 +179,20 @@ describe('applyBattleOutcome', () => {
     for (const c of [...state.party, ...state.box]) expect(c.hp).toBe(c.maxHp);
     expect(state.party.map((c) => c.uid)).toEqual(g.party.map((c) => c.uid));
     expect(state.box.map((c) => c.uid)).toEqual(g.box.map((c) => c.uid));
-    expect(state.book).toEqual({ ...g.book, watery: 'seen' });
+    expect(state.book).toEqual(g.book); // watery was already caught; nothing lost
+  });
+
+  it('lost: a newly met species is still remembered as seen', () => {
+    const g = withParty([mon('firey')]);
+    const b = finished(g, mon('watery'), { outcome: 'lost' });
+    expect(applyBattleOutcome(g, b, data).state.book).toEqual({ firey: 'caught', watery: 'seen' });
+  });
+
+  it('refuses a battle result for a different party, or with a bad active slot', () => {
+    const g = withParty([mon('firey'), mon('watery')]);
+    const b = finished(g, mon('watery'), { outcome: 'ran' });
+    expect(() => applyBattleOutcome(depositToBox(g, 1), b, data)).toThrow(/different party/);
+    expect(() => applyBattleOutcome(g, { ...b, activeIndex: 4 }, data)).toThrow(/slot/);
   });
 
   it('refuses a battle that has not finished', () => {
@@ -176,11 +200,13 @@ describe('applyBattleOutcome', () => {
     expect(() => applyBattleOutcome(g, startBattle(g.party, mon('watery')), data)).toThrow();
   });
 
-  it('does not change the state passed in', () => {
-    const g = withParty([mon('firey')]);
-    const before = structuredClone(g);
-    const wild = mon('watery', 3, 2);
-    applyBattleOutcome(g, finished(g, wild, { outcome: 'caught', wild }), data);
-    expect(g).toEqual(before);
+  it('does not change the state passed in, for any outcome', () => {
+    for (const outcome of ['won', 'caught', 'ran', 'lost'] as const) {
+      const g = withParty([{ ...mon('firey'), xp: 49 }]);
+      const before = structuredClone(g);
+      const wild = mon('watery', 3, outcome === 'won' ? 0 : 2);
+      applyBattleOutcome(g, finished(g, wild, { outcome, wild }), data);
+      expect(g, outcome).toEqual(before);
+    }
   });
 });

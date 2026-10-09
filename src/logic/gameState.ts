@@ -95,6 +95,10 @@ export function applyBattleOutcome(
   data: CreatureData,
 ): OutcomeResult {
   if (!battle.outcome) throw new Error('battle is not over yet');
+  const sameParty =
+    battle.party.length === prev.party.length && battle.party.every((c, i) => c.uid === prev.party[i].uid);
+  if (!sameParty) throw new Error('battle result is for a different party');
+  checkSlot(battle.party, battle.activeIndex, 'party');
   let state: GameState = markSeen({ ...prev, party: battle.party.map((c) => ({ ...c })) }, battle.wild.speciesId);
   let levelUps: number[] = [];
 
