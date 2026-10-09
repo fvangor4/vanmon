@@ -140,9 +140,10 @@ rigor:
 - [x] 7. XP + level-up (stat growth, cap at level 20).
       files: src/logic/xp.ts, src/logic/xp.test.ts
       commits: [9f46e37, 559518f]
-- [ ] 8. Game state: party (max 6), box, Book seen/caught, position, heal-all,
+- [~] 8. Game state: party (max 6), box, Book seen/caught, position, heal-all,
       send-home-on-loss.
       files: src/logic/gameState.ts, src/logic/gameState.test.ts
+      commits: [214a656]
 - [ ] 9. Save system: versioned serialize/load via localStorage, corrupt/unknown
       version → fresh + backup key, request persistent storage.
       files: src/logic/save.ts, src/logic/save.test.ts
@@ -192,3 +193,5 @@ rigor:
 - task 7 review: spec pass. code — level/xp from saves unchecked; species mismatch unchecked; above-cap behavior undocumented; level-up not asserted in hp test; curve pinned at one level. Fixed 559518f (RangeErrors; species id check; above-cap unchanged + test; curve loop: 2-3 wins every level). Load-side invariants recorded under Unknowns for task 9. 13 tests.
 - task 10: implemented; 13 tests incl. whole-world checks (every warp lands walkable, has a way back, and is reachable from every arrival point). Town 20×15, route 24×18, pond 20×15; home door (7,4), start (7,5).
 - task 6: implemented (battle.test.ts also touched for catch tests). Chance 60% full HP → 95% near 0; 3 wiggles each pass with chance^(1/3). 30 tests across battle+catch.
+- task 6 spec review: only finding = battle.test.ts outside file list (accepted; catch tests belong with the engine).
+- task 8: implemented; 16 tests. applyBattleOutcome folds won (XP to active)/caught/ran/lost (home + heal all) into GameState.
