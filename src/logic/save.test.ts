@@ -90,21 +90,28 @@ describe('damaged saves start fresh and keep the bad data in a backup', () => {
     expect(readBackups(store).at(-1)!.raw).toBe(raw);
   });
 
-  it('upgrades older saves step by step through the migrations', () => {
+  it('upgrades older saves step by step, in order, through the migrations', () => {
     const store = memoryStore();
     saveGame(store, game()); // written as version 1
-    const migrations = { 1: (st: any) => ({ ...st, position: { map: 'route', x: 5, y: 5 } }) };
-    const { state } = loadGame(store, data, { version: 2, migrations });
-    expect(state!.position).toEqual({ map: 'route', x: 5, y: 5 });
+    const migrations = {
+      1: (st: any) => ({ ...st, position: { map: 'route', x: 5, y: 5 } }),
+      2: (st: any) => ({ ...st, position: { ...st.position, x: st.position.x + 1 } }), // needs step 1 first
+    };
+    const { state } = loadGame(store, data, { version: 3, migrations });
+    expect(state!.position).toEqual({ map: 'route', x: 6, y: 5 });
     expect(state!.party).toHaveLength(2);
   });
 
-  it('an older save with no upgrade step, or an upgrade that crashes, starts fresh with a backup', () => {
+  it('a missing or crashing upgrade backs up the save and protects it from autosave', () => {
     const store = memoryStore();
     saveGame(store, game());
-    expect(loadGame(store, data, { version: 2, migrations: {} })).toEqual({ state: null, problem: 'no way to upgrade a version 1 save' });
+    expect(loadGame(store, data, { version: 2, migrations: {} })).toEqual({
+      state: null, problem: 'no way to upgrade a version 1 save', protectSave: true,
+    });
     const boom = { 1: () => { throw new Error('bad old data'); } };
-    expect(loadGame(store, data, { version: 2, migrations: boom })).toEqual({ state: null, problem: 'could not load save: Error: bad old data' });
+    expect(loadGame(store, data, { version: 2, migrations: boom })).toEqual({
+      state: null, problem: 'upgrading a version 1 save failed: Error: bad old data', protectSave: true,
+    });
     expect(readBackups(store)).toHaveLength(2);
   });
 
@@ -112,9 +119,10 @@ describe('damaged saves start fresh and keep the bad data in a backup', () => {
     const store = memoryStore();
     saveGame(store, { ...game(), position: { map: 'route', x: 5, y: 5 } });
     const broken = { ...MAPS, route: { ...MAPS.route, rows: [] } };
-    const { state } = loadGame(store, data, { maps: broken });
+    const { state, problem } = loadGame(store, data, { maps: broken });
     expect(state!.position).toEqual(START);
     expect(state!.party).toHaveLength(2);
+    expect(problem).toMatch(/map "route" is broken/);
   });
 
   it('never crashes on a position naming a built-in object key', () => {
@@ -140,6 +148,11 @@ describe('damaged saves start fresh and keep the bad data in a backup', () => {
     const store = memoryStore({ [SAVE_KEY]: '{oops', [BACKUP_KEY]: JSON.stringify([null, 7, { raw: 'old', problem: 'x', at: '', dropped: [] }]) });
     loadGame(store, data);
     expect(readBackups(store).map((b) => b.raw)).toEqual(['old', '{oops']);
+  });
+
+  it('reads an old single-entry backup and fills in missing fields', () => {
+    const store = memoryStore({ [BACKUP_KEY]: JSON.stringify({ raw: 'old', problem: 'x' }) });
+    expect(readBackups(store)).toEqual([{ at: '', problem: 'x', raw: 'old', dropped: [] }]);
   });
 
   it('does not repeat the same backup, and keeps only the last 5', () => {

@@ -72,9 +72,13 @@ export interface BackupEntry {
 /** Past problem saves, newest last. */
 export function readBackups(store: KeyValueStore): BackupEntry[] {
   try {
-    const list: unknown = JSON.parse(store.getItem(BACKUP_KEY) ?? '[]');
-    if (!Array.isArray(list)) return [];
-    return list.filter((b): b is BackupEntry => isRecord(b) && typeof b.raw === 'string' && typeof b.problem === 'string');
+    const parsed: unknown = JSON.parse(store.getItem(BACKUP_KEY) ?? '[]');
+    const list = Array.isArray(parsed) ? parsed : [parsed]; // early builds stored a single entry
+    return list.flatMap((b) =>
+      isRecord(b) && typeof b.raw === 'string' && typeof b.problem === 'string'
+        ? [{ at: typeof b.at === 'string' ? b.at : '', problem: b.problem, raw: b.raw, dropped: Array.isArray(b.dropped) ? b.dropped : [] }]
+        : [],
+    );
   } catch {
     return [];
   }
@@ -117,14 +121,16 @@ function repairCreature(raw: unknown, species: Map<string, SpeciesDef>, seenUids
   };
 }
 
-function repairPosition(raw: unknown, maps: Record<string, MapDef>): Position {
+function repairPosition(raw: unknown, maps: Record<string, MapDef>, problems: string[]): Position {
   if (isRecord(raw) && typeof raw.map === 'string' && Object.hasOwn(maps, raw.map)) {
     const { x, y } = raw;
     let map;
     try {
       map = parseMap(maps[raw.map]);
-    } catch {
-      return { ...START }; // a broken map shipped in an update shouldn't cost anyone their creatures
+    } catch (err) {
+      // A broken map shipped in an update shouldn't cost anyone their creatures.
+      problems.push(`map "${raw.map}" is broken, starting at home: ${String(err)}`);
+      return { ...START };
     }
     // isWalkable is false for fractional coordinates (no such tile). Never
     // resume standing on an exit, or loading would bounce you to another map.
@@ -173,13 +179,20 @@ export function loadGame(store: KeyValueStore, data: CreatureData, opts: LoadOpt
     return { ...fail(`save is from a newer version (${version})`), protectSave: true };
   }
 
-  try {
-    while (version < currentVersion) {
-      const migrate = migrations[version];
-      if (!migrate) return fail(`no way to upgrade a version ${version} save`);
+  // A missing or crashing upgrade is a bug in the game, not a bad save: keep the
+  // save safe from autosave so a fixed update can still load it.
+  const protect = (problem: string): LoadResult => ({ ...fail(problem), protectSave: true });
+  for (; version < currentVersion; version++) {
+    const migrate = migrations[version];
+    if (!migrate) return protect(`no way to upgrade a version ${version} save`);
+    try {
       s = migrate(s);
-      version++;
+    } catch (err) {
+      return protect(`upgrading a version ${version} save failed: ${String(err)}`);
     }
+  }
+
+  try {
     return repairState(store, raw, s, data, maps, fail);
   } catch (err) {
     // Last resort: a save must never crash the game.
@@ -221,7 +234,11 @@ function repairState(
   for (const c of [...party, ...box]) book[c.speciesId] = 'caught';
 
   if (dropped.length > 0) backup(store, raw, 'some creatures could not be loaded', dropped);
-  return { state: { party, box, book, position: repairPosition(s.position, maps) } };
+  const problems: string[] = [];
+  const position = repairPosition(s.position, maps, problems);
+  const result: LoadResult = { state: { party, box, book, position } };
+  if (problems.length > 0) result.problem = problems.join('; ');
+  return result;
 }
 
 /** Asks Safari not to clear the save when space is low. Never throws. */
