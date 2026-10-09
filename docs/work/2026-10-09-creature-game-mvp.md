@@ -145,8 +145,9 @@ rigor:
 - [ ] 9. Save system: versioned serialize/load via localStorage, corrupt/unknown
       version → fresh + backup key, request persistent storage.
       files: src/logic/save.ts, src/logic/save.test.ts
-- [ ] 10. Maps as ASCII data (town, route, pond) + parser + BFS tap-to-walk pathfinding.
+- [~] 10. Maps as ASCII data (town, route, pond) + parser + BFS tap-to-walk pathfinding.
       files: src/logic/map.ts, src/logic/map.test.ts, src/data/maps.ts
+      commits: [673e810]
 - [ ] 11. Encounter roll per area (chance per grass step, weighted species, level range).
       files: src/logic/encounters.ts, src/logic/encounters.test.ts, src/data/maps.ts
 - [ ] 12. Read-aloud helper + DialogBox UI with speaker button + big Button UI.
@@ -188,3 +189,4 @@ rigor:
 - task 5: implemented; 14 tests. Engine copies state each turn (inputs never mutated); events: move/damage/faint/swap/ran/won/lost.
 - task 5 review: spec — wild move choice only tested at rng 0.999. code — 8 findings (random pick untested; 0.6 not pinned; Math.min clamp hid bad rng; damage `amount` overshot remaining HP; takeTurn non-mutation untested; loss-after-swap untested; context errors untested; asleep wild accepted). All fixed in 7e60a72 (seq rng helper; amount = HP actually lost; rng outside [0,1) throws; startBattle rejects asleep wild). 20 tests. Re-review skipped (on-nontrivial; fixes mostly tests + 3 small guards).
 - task 7 review: spec pass. code — level/xp from saves unchecked; species mismatch unchecked; above-cap behavior undocumented; level-up not asserted in hp test; curve pinned at one level. Fixed 559518f (RangeErrors; species id check; above-cap unchanged + test; curve loop: 2-3 wins every level). Load-side invariants recorded under Unknowns for task 9. 13 tests.
+- task 10: implemented; 13 tests incl. whole-world checks (every warp lands walkable, has a way back, and is reachable from every arrival point). Town 20×15, route 24×18, pond 20×15; home door (7,4), start (7,5).
