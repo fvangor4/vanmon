@@ -151,8 +151,9 @@ rigor:
 - [~] 10. Maps as ASCII data (town, route, pond) + parser + BFS tap-to-walk pathfinding.
       files: src/logic/map.ts, src/logic/map.test.ts, src/data/maps.ts
       commits: [673e810, efdd912]
-- [ ] 11. Encounter roll per area (chance per grass step, weighted species, level range).
+- [~] 11. Encounter roll per area (chance per grass step, weighted species, level range).
       files: src/logic/encounters.ts, src/logic/encounters.test.ts, src/data/maps.ts
+      commits: [b8bb08f]
 - [ ] 12. Read-aloud helper + DialogBox UI with speaker button + big Button UI.
       files: src/ui/speech.ts, src/ui/speech.test.ts, src/ui/DialogBox.ts, src/ui/Button.ts
 - [ ] 13. Overworld scene: procedural tile textures, player sprite, tap-to-walk,
@@ -200,3 +201,4 @@ rigor:
 - task 8 review: spec — Book changes on loss (marks wild 'seen') vs "Book unchanged" → disagree: intent is "nothing lost"; seeing a new species only adds. Pinned both cases in tests. code — caught-HP untested; no-mutation only on caught path; no party-identity guard; activeIndex unchecked; GameState unversioned (→ disagree: SaveFile wrapper carries version, task 9); fixture Book inconsistent; bad-slot coverage thin. Fixed 5c33689 + 0b82f0b (I committed 5c33689 with one test red from the fixture change — a `grep` in the command chain masked vitest's exit code; fixed immediately in 0b82f0b). 18 tests.
 - task 9: implemented; 21 tests. Save = {version:1, savedAt, state}. Load repairs: drop unknown-species / bad-level creatures (into backup `dropped`), recompute stats, clamp hp/xp (xp 0 at cap), regenerate missing/duplicate uids, refill empty party from Box, filter Book + force owned species to caught, reset bad position to START. Unreadable storage → no save; setItem failure → saveGame false.
 - task 10 review: spec — closest-tile test relied on a tie. code — paths walked through/ended on warps (tap tree next to town exit → sent to route!); tie test; empty-map check untested; world-data gaps (arrival-on-warp, key≠id); `from` unchecked. Fixed efdd912: BFS never enters a warp unless it is the tapped tile; unambiguous closest test; empty map test; id/arrival checks; invalid start throws (save load already repairs positions). Reverse-warp coordinate check → disagree: arrival tiles are deliberately one step inside the exit, not the mirror tile. 18 tests. Code re-review requested (logic change).
+- task 11: implemented. Also touched creatures.ts/test + creatures.json (optional `areas` per species) — needed for Done-when #6 (new creature appears in encounters with no code change). AREAS (chance 0.15, levels) in maps.ts; 3-step cooldown after battles. 148 logic tests green.
