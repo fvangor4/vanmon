@@ -60,7 +60,7 @@ describe('rollEncounter', () => {
     expect(() => rollEncounter(route, pool, seq(0.1, Number.NaN), 10)).toThrow(RangeError);
   });
 
-  it('picks every species and level about evenly over many steps', () => {
+  it('picks every species and level evenly over many steps', () => {
     let a = 7;
     const rng = () => {
       a = (a + 0x6d2b79f5) | 0;
@@ -77,6 +77,10 @@ describe('rollEncounter', () => {
     const total = [...counts.values()].reduce((x, y) => x + y, 0);
     expect(total / 20000).toBeGreaterThan(0.18);
     expect(total / 20000).toBeLessThan(0.22);
+    for (const [bucket, n] of counts) {
+      expect(n / total, bucket).toBeGreaterThan(1 / 6 - 0.03);
+      expect(n / total, bucket).toBeLessThan(1 / 6 + 0.03);
+    }
   });
 });
 
@@ -92,11 +96,16 @@ describe('validateAreas', () => {
     }
   });
 
-  it('rejects bad chances, level ranges above the cap, unknown maps, and species areas that do not exist', () => {
-    expect(() => validateAreas({ route: { chance: 0, minLevel: 2, maxLevel: 3 } }, data, MAPS)).toThrow(/chance/);
-    expect(() => validateAreas({ route: { chance: 0.2, minLevel: 5, maxLevel: 3 } }, data, MAPS)).toThrow(/level/);
-    expect(() => validateAreas({ route: { chance: 0.2, minLevel: 2, maxLevel: LEVEL_CAP + 1 } }, data, MAPS)).toThrow(/level/);
-    expect(() => validateAreas({ moon: route }, data, MAPS)).toThrow(/moon/);
+  it('rejects bad chances, bad level ranges, unknown maps, and species areas that do not exist', () => {
+    const routeOnly = { ...data, species: [data.species[0], data.species[2]] }; // nothing needs "pond"
+    expect(() => validateAreas({ route }, routeOnly, MAPS)).not.toThrow();
+    for (const chance of [0, 1.5, Number.NaN]) {
+      expect(() => validateAreas({ route: { ...route, chance } }, routeOnly, MAPS), `chance ${chance}`).toThrow(/chance/);
+    }
+    for (const [minLevel, maxLevel] of [[5, 3], [0, 3], [2.5, 3], [2, LEVEL_CAP + 1]]) {
+      expect(() => validateAreas({ route: { ...route, minLevel, maxLevel } }, routeOnly, MAPS), `${minLevel}-${maxLevel}`).toThrow(/level/);
+    }
+    expect(() => validateAreas({ route, moon: route }, routeOnly, MAPS)).toThrow(/moon/);
     const typo = { ...data, species: [{ ...data.species[0], areas: ['rout'] }] };
     expect(() => validateAreas({ route }, typo, MAPS)).toThrow(/rout/);
   });

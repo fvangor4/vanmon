@@ -32,7 +32,12 @@ function roll(rng: Rng): number {
   return r;
 }
 
-/** Called for each step onto tall grass. Returns the creature met, or null. */
+/**
+ * Called for each step onto tall grass. Returns the creature met, or null.
+ * `stepsSinceBattle` counts tall-grass steps finished *before* this one since
+ * the last battle (0 on the first step after a battle, a new game, or a
+ * reload), so the first ENCOUNTER_COOLDOWN_STEPS steps are always free.
+ */
 export function rollEncounter(
   area: AreaEncounters,
   pool: SpeciesDef[],
