@@ -104,6 +104,10 @@ rigor:
       task 9 load must recompute maxHp/attack/defense from species + level
       (clamping hp), and drop creatures whose speciesId no longer exists
       (logging them into the backup key), so parent edits never break a save.
+      Also (task 7 review): load must require level a whole number 1..LEVEL_CAP
+      and xp a whole number 0..xpToNextLevel(level)-1 (0 at the cap); gainXp
+      throws on broken values rather than silently misbehaving.
+- [x] Encounter levels (task 7 review) → task 11 must keep wild levels ≤ LEVEL_CAP (20).
 
 - [x] Image URLs under the Pages base (from task 3 review) → requirement for
       task 13/14: build creature image URLs as
@@ -125,15 +129,16 @@ rigor:
 - [x] 4. Type chart + damage formula (injectable RNG).
       files: src/logic/damage.ts, src/logic/damage.test.ts
       commits: [f4e6525, c4c268d, bfb7f7e]
-- [~] 5. Battle engine (pure state machine): fight turn, wild random move,
+- [x] 5. Battle engine (pure state machine): fight turn, wild random move,
       faint, run, swap; emits event list for the scene to play back.
       Wild creatures deal ×0.6 damage (gentle difficulty; see task 4 log).
       files: src/logic/battle.ts, src/logic/battle.test.ts
-      commits: [472b856]
+      commits: [472b856, 7e60a72]
 - [ ] 6. Catch logic in battle engine: wiggle count, HP-scaled chance, fail → wild turn.
       files: src/logic/catch.ts, src/logic/catch.test.ts, src/logic/battle.ts
-- [ ] 7. XP + level-up (stat growth, cap at level 20).
+- [x] 7. XP + level-up (stat growth, cap at level 20).
       files: src/logic/xp.ts, src/logic/xp.test.ts
+      commits: [9f46e37, 559518f]
 - [ ] 8. Game state: party (max 6), box, Book seen/caught, position, heal-all,
       send-home-on-loss.
       files: src/logic/gameState.ts, src/logic/gameState.test.ts
@@ -181,3 +186,5 @@ rigor:
 - task 4 review: spec — same-type ×1.25 bonus stacked with ×2 made wild type moves 2-shot starters (not "gentle"); anchor used power 45 not the real 35; weak multiplier unpinned. code — min-damage clamp not reached by its test; ±15% roll bound too loose; weak unpinned; rng output unchecked. Fixed c4c268d: same-type bonus removed (kids only need "pick the move that beats their color"), exact anchors (plain 4, neutral type 5, super 11 → 5 hits vs 2 hits on 20 HP), exact roll bounds 35..41, clamp test uses weak+no-bonus+low roll, rng outside [0,1) throws RangeError. Gentleness lever moved to the battle engine: wild damage ×0.6 (added to task 5).
 - task 4 re-review: weak multiplier only loosely pinned on base 5.6; ceil(20/x) asserts tautological. Fixed bfb7f7e (exact ×1/×2/×0.5 on base 42 → 41/83/20). Done.
 - task 5: implemented; 14 tests. Engine copies state each turn (inputs never mutated); events: move/damage/faint/swap/ran/won/lost.
+- task 5 review: spec — wild move choice only tested at rng 0.999. code — 8 findings (random pick untested; 0.6 not pinned; Math.min clamp hid bad rng; damage `amount` overshot remaining HP; takeTurn non-mutation untested; loss-after-swap untested; context errors untested; asleep wild accepted). All fixed in 7e60a72 (seq rng helper; amount = HP actually lost; rng outside [0,1) throws; startBattle rejects asleep wild). 20 tests. Re-review skipped (on-nontrivial; fixes mostly tests + 3 small guards).
+- task 7 review: spec pass. code — level/xp from saves unchecked; species mismatch unchecked; above-cap behavior undocumented; level-up not asserted in hp test; curve pinned at one level. Fixed 559518f (RangeErrors; species id check; above-cap unchanged + test; curve loop: 2-3 wins every level). Load-side invariants recorded under Unknowns for task 9. 13 tests.
