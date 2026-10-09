@@ -83,12 +83,15 @@ describe('validateCreatureData', () => {
     expect(p).toContainEqual('species #1: missing name');
     const m = problemsOf(mutated((d) => { delete d.moves[0].name; }));
     expect(m).toContainEqual('move "bump": missing name');
+    expect(problemsOf(mutated((d) => { delete d.moves[1].id; }))).toContainEqual('move #2: missing id');
   });
 
-  it('rejects ids that are not lowercase-dash words (e.g. stray spaces)', () => {
-    expect(problemsOf(mutated((d) => (d.species[0].id = ' Emberpup')))).toContainEqual(
-      expect.stringMatching(/id must be lowercase/),
-    );
+  it('rejects ids that are not lowercase-dash words (stray spaces, capitals)', () => {
+    for (const bad of ['emberpup ', 'fire kitty', 'Emberpup']) {
+      expect(problemsOf(mutated((d) => (d.species[0].id = bad)))).toContainEqual(
+        expect.stringMatching(/id must be lowercase/),
+      );
+    }
   });
 
   it('reports a species that references an unknown move, naming both', () => {
@@ -110,7 +113,7 @@ describe('validateCreatureData', () => {
     expect(problemsOf(mutated((d) => (d.species[0].moves = ['bump', 'splash-shot'])))).toContainEqual(expect.stringMatching(rule));
   });
 
-  it('rejects duplicate species and move ids, ignoring case, without "undefined" noise', () => {
+  it('rejects duplicate species and move ids without "undefined" noise', () => {
     expect(problemsOf(mutated((d) => d.species.push({ ...d.species[0] })))).toContainEqual(
       'duplicate species id "emberpup"',
     );
@@ -123,10 +126,11 @@ describe('validateCreatureData', () => {
     expect(twoMissing.join('\n')).not.toMatch(/undefined/);
   });
 
-  it('rejects an unknown creature type', () => {
-    expect(problemsOf(mutated((d) => (d.species[0].type = 'rock')))).toContainEqual(
-      expect.stringMatching(/emberpup.*type must be/),
-    );
+  it('rejects an unknown creature type with just that one message', () => {
+    expect(problemsOf(mutated((d) => (d.species[0].type = 'rock')))).toEqual([
+      'species "emberpup": type must be one of fire, water, leaf',
+    ]);
+    expect(problemsOf(mutated((d) => delete d.species[0].type)).join('\n')).not.toMatch(/undefined/);
   });
 
   it('rejects missing or badly named image files', () => {
@@ -136,13 +140,19 @@ describe('validateCreatureData', () => {
         expect.stringMatching(/image must be a file name/),
       );
     }
-    expect(problemsOf(mutated((d) => (d.species[0].image = 'Fire_Kitty-2.png')))).toEqual([]);
+    for (const ok of ['Fire_Kitty-2.png', 'IMG_1234.JPG', 'drawing.PNG']) {
+      expect(problemsOf(mutated((d) => (d.species[0].image = ok)))).toEqual([]);
+    }
   });
 
   it('rejects missing or out-of-range base stats', () => {
     expect(problemsOf(mutated((d) => (d.species[0].baseStats.attack = 0)))).toContainEqual(
       expect.stringMatching(/baseStats.attack/),
     );
+    expect(problemsOf(mutated((d) => (d.species[0].baseStats.hp = 256)))).toContainEqual(
+      expect.stringMatching(/baseStats.hp/),
+    );
+    expect(problemsOf(mutated((d) => (d.species[0].baseStats.hp = 255)))).toEqual([]);
     expect(problemsOf(mutated((d) => delete d.species[0].baseStats))).toContainEqual(
       'species "emberpup": missing baseStats',
     );
@@ -152,10 +162,16 @@ describe('validateCreatureData', () => {
     expect(problemsOf(mutated((d) => (d.species[0].moves = ['bump'])))).toContainEqual(
       'species "emberpup": must have exactly 2 moves',
     );
+    expect(problemsOf(mutated((d) => (d.species[0].moves = 'bump, spark')))).toContainEqual(
+      'species "emberpup": must have exactly 2 moves',
+    );
   });
 
   it('rejects a move with invalid power or type', () => {
-    expect(problemsOf(mutated((d) => (d.moves[1].power = -5)))).toContainEqual(expect.stringMatching(/spark.*power/));
+    for (const bad of [-5, 0, 2.5, 201, '45']) {
+      expect(problemsOf(mutated((d) => (d.moves[1].power = bad)))).toContainEqual(expect.stringMatching(/spark.*power/));
+    }
+    expect(problemsOf(mutated((d) => (d.moves[1].power = 200)))).toEqual([]);
     expect(problemsOf(mutated((d) => (d.moves[0].type = 'lava')))).toContainEqual(expect.stringMatching(/bump.*type/));
   });
 

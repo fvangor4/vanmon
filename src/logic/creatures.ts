@@ -66,7 +66,7 @@ export const MAX_LEVEL = 100;
 /** Ids are lowercase words joined by dashes, e.g. "fire-kitty". */
 const ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 /** Just a file name in public/creatures/, no folders. */
-const IMAGE_PATTERN = /^[A-Za-z0-9_-]+\.(png|svg|jpe?g|webp)$/;
+const IMAGE_PATTERN = /^[A-Za-z0-9_-]+\.(png|svg|jpe?g|webp)$/i;
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -144,7 +144,8 @@ function checkSpecies(
     else if (!movesById.has(m)) problems.push(`${label}: unknown move "${m}"`);
     else known.push(movesById.get(m)!);
   }
-  if (known.length === 2) {
+  const typeIsValid = (CREATURE_TYPES as readonly unknown[]).includes(raw.type);
+  if (known.length === 2 && typeIsValid) {
     const types = known.map((m) => m.type);
     if (!types.includes('normal') || !types.includes(raw.type)) {
       problems.push(`${label}: needs one normal move and one ${String(raw.type)} move`);
@@ -152,15 +153,14 @@ function checkSpecies(
   }
 }
 
-/** Duplicate ids, ignoring case. Missing ids are reported elsewhere, not here. */
+/** Duplicate ids. Missing ids are reported elsewhere, not here. */
 function findDuplicates(ids: unknown[]): string[] {
   const seen = new Set<string>();
   const dupes = new Set<string>();
   for (const id of ids) {
     if (!isNonEmptyString(id)) continue;
-    const key = id.toLowerCase();
-    if (seen.has(key)) dupes.add(id);
-    seen.add(key);
+    if (seen.has(id)) dupes.add(id);
+    seen.add(id);
   }
   return [...dupes];
 }
