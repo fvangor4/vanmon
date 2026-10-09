@@ -62,6 +62,7 @@ export function makeBattleContext(data: CreatureData, rng: Rng): BattleContext {
 }
 
 export function startBattle(party: Creature[], wild: Creature): BattleState {
+  if (wild.hp <= 0) throw new Error('cannot battle a wild creature that is already asleep');
   const activeIndex = party.findIndex((c) => c.hp > 0);
   if (activeIndex === -1) throw new Error('cannot battle: every party creature is asleep');
   return {
@@ -88,8 +89,10 @@ function attack(
     move,
     rng: ctx.rng,
   });
-  const amount = side === 'wild' ? Math.max(1, Math.floor(damage * WILD_DAMAGE_SCALE)) : damage;
-  defender.hp = Math.max(0, defender.hp - amount);
+  const hit = side === 'wild' ? Math.max(1, Math.floor(damage * WILD_DAMAGE_SCALE)) : damage;
+  // Report HP actually lost, so a finishing blow never claims more than was left.
+  const amount = Math.min(hit, defender.hp);
+  defender.hp -= amount;
   events.push({ kind: 'move', side, moveId: move.id, moveName: move.name });
   events.push({ kind: 'damage', target, amount, hpAfter: defender.hp, effectiveness });
 }
@@ -97,7 +100,9 @@ function attack(
 /** The wild creature's turn: random move at the active creature; may end the battle. */
 function wildTurn(state: BattleState, ctx: BattleContext, events: BattleEvent[]): void {
   const moves = ctx.species(state.wild.speciesId).moves;
-  const moveId = moves[Math.min(moves.length - 1, Math.floor(ctx.rng() * moves.length))];
+  const r = ctx.rng();
+  if (!(r >= 0 && r < 1)) throw new RangeError(`rng must return a number in [0, 1), got ${r}`);
+  const moveId = moves[Math.floor(r * moves.length)];
   const active = state.party[state.activeIndex];
   attack('wild', state.wild, active, ctx.move(moveId), ctx, events);
   if (active.hp === 0) {

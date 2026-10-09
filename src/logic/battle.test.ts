@@ -19,6 +19,11 @@ const sp = (id: string) => data.species.find((s) => s.id === id)!;
 /** rng that always returns n (just under 1 = top damage roll, picks the last move). */
 const always = (n: number) => () => n;
 const ctx = (n = 0.999) => makeBattleContext(data, always(n));
+/** rng that returns the given values in order (then repeats the last one). */
+const seq = (...values: number[]) => {
+  let i = 0;
+  return () => values[Math.min(i++, values.length - 1)];
+};
 
 function mon(id: string, level = 5, hp?: number): Creature {
   const c = createCreature(sp(id), level);
@@ -39,10 +44,13 @@ describe('startBattle', () => {
   it('does not mutate the creatures passed in', () => {
     const party = [mon('firey')];
     const wild = mon('leafy');
-    const s = startBattle(party, wild);
-    takeTurn(s, { kind: 'fight', moveIndex: 1 }, ctx());
+    startBattle(party, wild);
     expect(party[0].hp).toBe(party[0].maxHp);
     expect(wild.hp).toBe(wild.maxHp);
+  });
+
+  it('refuses a wild creature that is already asleep', () => {
+    expect(() => startBattle([mon('firey')], mon('leafy', 5, 0))).toThrow();
   });
 });
 
@@ -60,14 +68,40 @@ describe('fight', () => {
     expect(state.party[0].hp).toBe(s.party[0].hp - (events[3] as any).amount);
   });
 
+  it('leaves the previous turn\'s state untouched', () => {
+    const s = startBattle([mon('firey')], mon('watery'));
+    const before = structuredClone(s);
+    takeTurn(s, { kind: 'fight', moveIndex: 0 }, ctx());
+    expect(s).toEqual(before);
+  });
+
+  it('the wild creature picks its move at random across its moves', () => {
+    const s = startBattle([mon('firey')], mon('watery'));
+    // rng calls: player damage roll, wild move pick, wild damage roll
+    const low = takeTurn(s, { kind: 'fight', moveIndex: 0 }, makeBattleContext(data, seq(0.5, 0.1, 0.5))).events;
+    const high = takeTurn(s, { kind: 'fight', moveIndex: 0 }, makeBattleContext(data, seq(0.5, 0.9, 0.5))).events;
+    expect(low[2]).toMatchObject({ side: 'wild', moveName: 'Bump' });
+    expect(high[2]).toMatchObject({ side: 'wild', moveName: 'Splash' });
+  });
+
+  it('refuses an rng outside [0, 1) for the wild move pick', () => {
+    const s = startBattle([mon('firey')], mon('watery'));
+    expect(() => takeTurn(s, { kind: 'fight', moveIndex: 0 }, makeBattleContext(data, seq(0.5, 1)))).toThrow(RangeError);
+    expect(() => takeTurn(s, { kind: 'fight', moveIndex: 0 }, makeBattleContext(data, seq(0.5, -0.2)))).toThrow(RangeError);
+  });
+
   it('reports super effective hits from the player', () => {
     const s = startBattle([mon('firey')], mon('leafy'));
     const { events } = takeTurn(s, { kind: 'fight', moveIndex: 1 }, ctx());
     expect(events[1]).toMatchObject({ target: 'wild', effectiveness: 'super' });
   });
 
-  it('softens wild damage so fights are gentle', () => {
-    expect(WILD_DAMAGE_SCALE).toBeLessThan(1);
+  it('softens wild damage to 60% so fights are gentle', () => {
+    expect(WILD_DAMAGE_SCALE).toBe(0.6);
+    // level 5 equal stats, Spark (45, fire on fire = neutral): player hits 5, wild hits floor(5 × 0.6) = 3
+    const t = takeTurn(startBattle([mon('firey')], mon('firey')), { kind: 'fight', moveIndex: 1 }, ctx()).events;
+    expect((t[1] as any).amount).toBe(5);
+    expect((t[3] as any).amount).toBe(3);
     // same creature, same move: the player's hit vs the wild's hit
     const s = startBattle([mon('firey')], mon('firey'));
     const { events } = takeTurn(s, { kind: 'fight', moveIndex: 1 }, ctx());
@@ -94,10 +128,11 @@ describe('fight', () => {
     expect(state.outcome).toBe('lost');
   });
 
-  it('never drops HP below 0', () => {
-    const s = startBattle([mon('firey', 20)], mon('leafy', 2, 1));
-    const { state } = takeTurn(s, { kind: 'fight', moveIndex: 1 }, ctx());
+  it('never drops HP below 0 and reports only the HP actually lost', () => {
+    const s = startBattle([mon('firey', 20)], mon('leafy', 2, 3));
+    const { state, events } = takeTurn(s, { kind: 'fight', moveIndex: 1 }, ctx());
     expect(state.wild.hp).toBe(0);
+    expect(events[1]).toMatchObject({ kind: 'damage', target: 'wild', amount: 3, hpAfter: 0 });
   });
 });
 
@@ -110,6 +145,14 @@ describe('swap', () => {
     expect(events.at(-1)).toMatchObject({ kind: 'damage', target: 'player', effectiveness: 'weak' });
     expect(state.party[1].hp).toBeLessThan(s.party[1].hp);
     expect(state.party[0].hp).toBe(s.party[0].hp);
+  });
+
+  it('loses if the creature swapped in runs out of HP', () => {
+    const s = startBattle([mon('firey'), mon('leafy', 5, 1)], mon('watery'));
+    const { state, events } = takeTurn(s, { kind: 'swap', partyIndex: 1 }, ctx());
+    expect(events.map((e) => e.kind)).toEqual(['swap', 'move', 'damage', 'faint', 'lost']);
+    expect(state.outcome).toBe('lost');
+    expect(state.party[1].hp).toBe(0);
   });
 
   it('rejects swapping to the current, a sleeping, or a missing creature', () => {
@@ -138,6 +181,15 @@ describe('after the battle ends', () => {
 });
 
 describe('makeBattleContext', () => {
+  it('names unknown species and moves', () => {
+    const c = ctx();
+    expect(() => c.species('nope')).toThrow(/unknown species "nope"/);
+    expect(() => c.move('nada')).toThrow(/unknown move "nada"/);
+    expect(c.move('bump').name).toBe('Bump');
+  });
+});
+
+describe('takeTurn input checks', () => {
   it('rejects a move index the creature does not have', () => {
     const s = startBattle([mon('firey')], mon('watery'));
     expect(() => takeTurn(s, { kind: 'fight', moveIndex: 2 }, ctx())).toThrow();
