@@ -151,22 +151,23 @@ rigor:
       send-home-on-loss.
       files: src/logic/gameState.ts, src/logic/gameState.test.ts
       commits: [214a656, 5c33689, 0b82f0b]
-- [~] 9. Save system: versioned serialize/load via localStorage, corrupt/unknown
+- [x] 9. Save system: versioned serialize/load via localStorage, corrupt/unknown
       version → fresh + backup key, request persistent storage.
       files: src/logic/save.ts, src/logic/save.test.ts
-      commits: [7f5f347, 5f22bd4]
+      commits: [7f5f347, 5f22bd4, 3714f7d, c96e377]
 - [x] 10. Maps as ASCII data (town, route, pond) + parser + BFS tap-to-walk pathfinding.
       files: src/logic/map.ts, src/logic/map.test.ts, src/data/maps.ts
       commits: [673e810, efdd912, bddca4d]
 - [x] 11. Encounter roll per area (chance per grass step, weighted species, level range).
       files: src/logic/encounters.ts, src/logic/encounters.test.ts, src/data/maps.ts
       commits: [b8bb08f, 8ff65df]
-- [~] 12. Read-aloud helper + DialogBox UI with speaker button + big Button UI.
+- [x] 12. Read-aloud helper + DialogBox UI with speaker button + big Button UI.
       files: src/ui/speech.ts, src/ui/speech.test.ts, src/ui/DialogBox.ts, src/ui/Button.ts
-      commits: [a70a6a8]
-- [ ] 13. Overworld scene: procedural tile textures, player sprite, tap-to-walk,
+      commits: [a70a6a8, d5734e9]
+- [~] 13. Overworld scene: procedural tile textures, player sprite, tap-to-walk,
       map transitions, grass → battle, home bed heals, autosave.
       files: src/scenes/OverworldScene.ts, src/scenes/textures.ts, src/main.ts
+      commits: [cc463ce]
 - [ ] 14. Battle scene: plays back engine events, move buttons by type color,
       effectiveness text + read-aloud, catch wiggle animation, win/lose flows.
       files: src/scenes/BattleScene.ts, src/main.ts
@@ -214,3 +215,6 @@ rigor:
 - task 10 re-review: off-map tap beside exit counted as tapping it; detour test didn't detour; unanchored throws; save could resume on a warp; crash-y data test. Fixed bddca4d (+ save part in 5f22bd4). Done.
 - task 11 review: spec — "weighted species" but pick is uniform → disagree: uniform odds are simpler and fair for kids; task wording was loose. Out-of-list files (creatures.ts/json) accepted for Done-when #6. Cooldown not requested → keep: gentle difficulty lever, documented. Runtime cap enforcement → validateAreas at boot (recorded under Unknowns). code — validateAreas never runs at runtime/build; stepsSinceBattle semantics; evenness untested; validation branches + fixture isolation. Fixed 8ff65df (build runs vitest; doc comment; per-bucket ±3%; chance/level cases on isolated fixture). Done.
 - task 12: implemented (speech 7 tests; Button/DialogBox are Phaser UI, verified visually in task 13).
+- task 9 re-reviews: round 2 (3714f7d) — injectable migrations/version for tests, migrate inside safety net, broken map → START, junk-tolerant backups, dedupe/trim tests, protectSave for newer saves. Round 3 (c96e377) — missing/crashing upgrade also sets protectSave, 2-step ordered migration test, broken map reported in `problem`, backup entries normalized (at/dropped), legacy single-object backup read. 41 tests. Stopping re-review here: remaining risk is in code paths dormant until SAVE_VERSION changes. Done.
+- task 12 review: spec — speak() gets emoji-stripped text, not the literal dialog text → Done-when #5 interpreted as "the spoken form of the dialog text" (verified that way in task 13). code — redundant stopPropagation (removed; topOnly makes speaker win); pressed-scale shrank hit area (now scales an inner face); onTap fired on slide-in releases (pressed tracking on Button + DialogBox); speech kept talking after text changed (stop on show/hide/continue); overlapping show() (→ disagree, documented single-sequence contract); auto-speak before first gesture is silent on iOS (→ title screen "tap to play" in task 15 unlocks it); voices lazy (warm getVoices); emoji filter gaps; cancel-before-speak order and voice-preference tests. Fixed d5734e9. DialogBox/Button lifecycle unit tests → disagree: Phaser objects, verified in browser instead. Done.
+- task 13: implemented (cc463ce). Added src/session.ts (shared Session: data, state, rng, save; honors protectSave via canSave) and rewrote BootScene (loads + validates creatures.json and areas, shows a "Grown-ups: creatures.json needs fixing" screen on bad data, loads art via BASE_URL, loads save). Added pinToScreen() to Button.ts: Phaser's Container.setScrollFactor doesn't reach nested children, so the dialog was drawn off-screen once the camera scrolled. Browser-verified at 1180x820: town renders, tap-to-walk + autosave, north exit → Grassy Route, grass encounter → "A wild Emberpup appeared!" dialog, speaker tap → speechSynthesis.speak("A wild Emberpup appeared!") without closing the box, tap box → continues. Battle hand-off waits for task 14.
