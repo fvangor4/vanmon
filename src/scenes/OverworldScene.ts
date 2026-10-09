@@ -2,14 +2,16 @@
 // step on the home door to heal, walk off the edge to change area.
 
 import Phaser from 'phaser';
+import { GAME_WIDTH } from '../config';
 import { createCreature, type Creature } from '../logic/creatures';
 import { rollEncounter, speciesForArea } from '../logic/encounters';
 import { healAll, markSeen } from '../logic/gameState';
 import { findPath, parseMap, type GameMap, type Point } from '../logic/map';
 import { AREAS, MAPS } from '../data/maps';
 import { session } from '../session';
-import { COLORS, FONT, pinToScreen } from '../ui/Button';
+import { BigButton, COLORS, FONT, pinToScreen } from '../ui/Button';
 import { DialogBox } from '../ui/DialogBox';
+import { openMenu } from './menuBase';
 import { PLAYER_TEXTURE, TILE, tileTexture } from './textures';
 
 const STEP_MS = 160;
@@ -49,6 +51,7 @@ export class OverworldScene extends Phaser.Scene {
     cam.fadeIn(250);
 
     this.drawAreaName();
+    this.drawHud();
     this.dialog = pinToScreen(new DialogBox(this));
 
     this.input.on(Phaser.Input.Events.POINTER_UP, (p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
@@ -80,6 +83,26 @@ export class OverworldScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(500);
     this.tweens.add({ targets: label, alpha: 0.85, delay: 2500, duration: 600 });
+  }
+
+  /** Menu buttons in the top-right corner. The Box lives at home, in Home Town. */
+  private drawHud(): void {
+    const buttons: [string, string][] = [['🎒', 'Party'], ['📖', 'Book']];
+    if (this.map.def.home) buttons.push(['📦', 'Box']);
+    buttons.forEach(([icon, key], i) => {
+      const b = new BigButton(this, GAME_WIDTH - 70 - i * 116, 60, {
+        icon,
+        color: COLORS.panel,
+        width: 100,
+        height: 88,
+        onTap: () => {
+          if (this.busy) return;
+          this.stop();
+          openMenu(this, key);
+        },
+      });
+      pinToScreen(b).setDepth(500);
+    });
   }
 
   private walkTo(tapped: Point): void {
