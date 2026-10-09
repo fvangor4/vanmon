@@ -107,3 +107,14 @@ export class BigButton extends Phaser.GameObjects.Container {
     this.bg.lineStyle(4, 0xffffff, 0.6).strokeRoundedRect(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4, 22);
   }
 }
+
+/**
+ * Keeps a UI object fixed on screen while the camera scrolls. Containers need
+ * this on every descendant (Phaser's own option only goes one level deep).
+ */
+export function pinToScreen<T extends Phaser.GameObjects.GameObject>(obj: T): T {
+  const o = obj as unknown as Phaser.GameObjects.Components.ScrollFactor;
+  if (typeof o.setScrollFactor === 'function') o.setScrollFactor(0, 0);
+  if (obj instanceof Phaser.GameObjects.Container) obj.list.forEach((child) => pinToScreen(child));
+  return obj;
+}

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from './config';
 import { BootScene } from './scenes/BootScene';
+import { OverworldScene } from './scenes/OverworldScene';
 
 new Phaser.Game({
   type: Phaser.AUTO,
@@ -13,5 +14,5 @@ new Phaser.Game({
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   input: { activePointers: 2 },
-  scene: [BootScene],
+  scene: [BootScene, OverworldScene],
 });
