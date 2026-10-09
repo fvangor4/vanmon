@@ -20,6 +20,11 @@
         user-select: none;
         -webkit-touch-callout: none;
       }
+      /* iOS Safari ignores user-scalable=no; touch-action is what blocks pinch/double-tap zoom. */
+      #game,
+      #game canvas {
+        touch-action: none;
+      }
       #game {
         width: 100vw;
         height: 100vh;
@@ -29,6 +34,10 @@
   </head>
   <body>
     <div id="game"></div>
+    <script>
+      // iOS Safari still fires pinch-zoom gestures; cancel them so little fingers can't zoom the page.
+      document.addEventListener('gesturestart', (e) => e.preventDefault());
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
