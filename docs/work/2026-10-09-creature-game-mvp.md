@@ -134,22 +134,23 @@ rigor:
       Wild creatures deal ×0.6 damage (gentle difficulty; see task 4 log).
       files: src/logic/battle.ts, src/logic/battle.test.ts
       commits: [472b856, 7e60a72]
-- [~] 6. Catch logic in battle engine: wiggle count, HP-scaled chance, fail → wild turn.
+- [x] 6. Catch logic in battle engine: wiggle count, HP-scaled chance, fail → wild turn.
       files: src/logic/catch.ts, src/logic/catch.test.ts, src/logic/battle.ts
-      commits: [d036573]
+      commits: [d036573, 2dc97f6]
 - [x] 7. XP + level-up (stat growth, cap at level 20).
       files: src/logic/xp.ts, src/logic/xp.test.ts
       commits: [9f46e37, 559518f]
-- [~] 8. Game state: party (max 6), box, Book seen/caught, position, heal-all,
+- [x] 8. Game state: party (max 6), box, Book seen/caught, position, heal-all,
       send-home-on-loss.
       files: src/logic/gameState.ts, src/logic/gameState.test.ts
-      commits: [214a656]
-- [ ] 9. Save system: versioned serialize/load via localStorage, corrupt/unknown
+      commits: [214a656, 5c33689, 0b82f0b]
+- [~] 9. Save system: versioned serialize/load via localStorage, corrupt/unknown
       version → fresh + backup key, request persistent storage.
       files: src/logic/save.ts, src/logic/save.test.ts
+      commits: [7f5f347]
 - [~] 10. Maps as ASCII data (town, route, pond) + parser + BFS tap-to-walk pathfinding.
       files: src/logic/map.ts, src/logic/map.test.ts, src/data/maps.ts
-      commits: [673e810]
+      commits: [673e810, efdd912]
 - [ ] 11. Encounter roll per area (chance per grass step, weighted species, level range).
       files: src/logic/encounters.ts, src/logic/encounters.test.ts, src/data/maps.ts
 - [ ] 12. Read-aloud helper + DialogBox UI with speaker button + big Button UI.
@@ -195,3 +196,7 @@ rigor:
 - task 6: implemented (battle.test.ts also touched for catch tests). Chance 60% full HP → 95% near 0; 3 wiggles each pass with chance^(1/3). 30 tests across battle+catch.
 - task 6 spec review: only finding = battle.test.ts outside file list (accepted; catch tests belong with the engine).
 - task 8: implemented; 16 tests. applyBattleOutcome folds won (XP to active)/caught/ran/lost (home + heal all) into GameState.
+- task 6 code review: catchChance accepted impossible HP (NaN → always caught, hp>maxHp → never); LCG in odds test overflowed 2^53; boundary untested; fresh-case assertion weak; retry untested. Fixed 2dc97f6 (RangeError; mulberry32; exact-boundary, first-event and retry tests). 33 tests. No re-review (targeted).
+- task 8 review: spec — Book changes on loss (marks wild 'seen') vs "Book unchanged" → disagree: intent is "nothing lost"; seeing a new species only adds. Pinned both cases in tests. code — caught-HP untested; no-mutation only on caught path; no party-identity guard; activeIndex unchecked; GameState unversioned (→ disagree: SaveFile wrapper carries version, task 9); fixture Book inconsistent; bad-slot coverage thin. Fixed 5c33689 + 0b82f0b (I committed 5c33689 with one test red from the fixture change — a `grep` in the command chain masked vitest's exit code; fixed immediately in 0b82f0b). 18 tests.
+- task 9: implemented; 21 tests. Save = {version:1, savedAt, state}. Load repairs: drop unknown-species / bad-level creatures (into backup `dropped`), recompute stats, clamp hp/xp (xp 0 at cap), regenerate missing/duplicate uids, refill empty party from Box, filter Book + force owned species to caught, reset bad position to START. Unreadable storage → no save; setItem failure → saveGame false.
+- task 10 review: spec — closest-tile test relied on a tie. code — paths walked through/ended on warps (tap tree next to town exit → sent to route!); tie test; empty-map check untested; world-data gaps (arrival-on-warp, key≠id); `from` unchecked. Fixed efdd912: BFS never enters a warp unless it is the tapped tile; unambiguous closest test; empty map test; id/arrival checks; invalid start throws (save load already repairs positions). Reverse-warp coordinate check → disagree: arrival tiles are deliberately one step inside the exit, not the mirror tile. 18 tests. Code re-review requested (logic change).
