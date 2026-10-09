@@ -1,6 +1,6 @@
 ---
-status: draft
-base:
+status: approved
+base: 64a3c77
 rigor:
   tests: tdd
   review: spec+code
@@ -151,3 +151,4 @@ rigor:
   (Pages deploy) → per-task spec+code review. Human may relax at approval.
 - Note: scene tasks (13–16) keep `tests: tdd` by putting their decision logic in
   tested `src/logic/` modules; rendering itself is verified in the browser pane.
+- 2026-10-09: approved by human (rigor unchanged: per-task spec+code). base = 64a3c77 (initial commit holding this plan).
