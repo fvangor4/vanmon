@@ -105,19 +105,23 @@ rigor:
       (clamping hp), and drop creatures whose speciesId no longer exists
       (logging them into the backup key), so parent edits never break a save.
 
+- [x] Image URLs under the Pages base (from task 3 review) → requirement for
+      task 13/14: build creature image URLs as
+      `import.meta.env.BASE_URL + 'creatures/' + image`, never '/creatures/…'.
+
 ## Tasks
 - [x] 1. Scaffold: install Node, git init, Vite + TS + Phaser + Vitest, landscape
       FIT config (1024×768 logical), Boot scene showing "VanMon", smoke test.
       files: package.json, tsconfig.json, vite.config.ts, index.html, src/main.ts,
              src/scenes/BootScene.ts, src/logic/smoke.test.ts, .gitignore
       commits: [259bd4c, 91c3b46]
-- [~] 2. Creature + move data model, JSON validation, create-instance-at-level;
+- [x] 2. Creature + move data model, JSON validation, create-instance-at-level;
       6 mock creatures in JSON.
       files: src/logic/creatures.ts, src/logic/creatures.test.ts, public/data/creatures.json
-      commits: [1d48593, b262dc3]
-- [~] 3. Mock creature art: 6 cute SVG blobs colored by type.
+      commits: [1d48593, b262dc3, 1b639e9]
+- [x] 3. Mock creature art: 6 cute SVG blobs colored by type.
       files: public/creatures/*.svg
-      commits: [a178afc]
+      commits: [a178afc, f918bde]
 - [ ] 4. Type chart + damage formula (injectable RNG).
       files: src/logic/damage.ts, src/logic/damage.test.ts
 - [ ] 5. Battle engine (pure state machine): fight turn, wild random move,
@@ -169,3 +173,5 @@ rigor:
 - task 2 review: spec — no normal+type move rule; real Pokémon move names (Tackle/Scratch/Ember). code — 11 findings (move rule, dup ids incl. undefined noise, non-string move refs, randomUUID needs secure context/iOS 15.4, unchecked level, stale saved stats, untrimmed ids/unknown keys, image name not checked, missing branch coverage, unreachable-in-try, no stat anchor). Fixed in b262dc3 (moves renamed Bump/Swipe/Spark; id + image patterns; level RangeError; getRandomValues uid; problemsOf() test helper; 24 tests).
 - task 2 disagreements: unknown JSON keys stay allowed (kids may add fields like "artist"; a typo'd key next to the valid one is harmless). Stale saved stats → recorded as a task 9 requirement under Unknowns rather than changing the Creature shape now.
 - task 3: implemented. 6 SVGs viewed in browser pane (contact sheet looked right). Added src/logic/art.test.ts (not in file list): fails naming the file when a species' image is missing (checked by temporarily moving leafbun.svg).
+- task 2 re-review (code): 5 findings — move rule fired on invalid type ("undefined"/"rock" noise), case-insensitive dup test untested, whitespace test masked by capital E, uppercase extensions (IMG_1234.JPG) rejected, untested branches (move missing id, non-array moves, upper bounds/fractions). Fixed in 1b639e9; toLowerCase dropped since ID_PATTERN already forbids capitals. 34 tests. No further re-review (rereview=on-nontrivial, fix was targeted).
+- task 3 review: spec — art.test.ts outside file list (accepted, see above); "colored by type" untested → disagree: color is visual, verified by eye in browser and by reviewer. code — SVG width/height/XML untested → fixed f918bde (verified failing when toastle width/height removed); base-path loader → recorded for task 13/14; glob matches non-images → disagree, IMAGE_PATTERN already limits names.
