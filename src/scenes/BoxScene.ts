@@ -10,7 +10,7 @@ import { creatureCard } from '../ui/CreatureCard';
 import { speaker } from '../ui/speech';
 import { MenuScene } from './menuBase';
 
-const PER_PAGE = 6;
+const PER_PAGE = 5; // leaves room for the page arrows
 
 export class BoxScene extends MenuScene {
   private page = 0;

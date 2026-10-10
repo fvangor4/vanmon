@@ -29,6 +29,8 @@ export class OverworldScene extends Phaser.Scene {
   private stepTarget: Point | null = null;
   private walking = false;
   private busy = false;
+  /** A menu tapped mid-step opens once the step finishes. */
+  private pendingMenu: string | null = null;
 
   constructor() {
     super('Overworld');
@@ -41,7 +43,10 @@ export class OverworldScene extends Phaser.Scene {
     this.stepTarget = null;
     this.walking = false;
     this.busy = false;
+    this.pendingMenu = null;
     this.drawMap();
+    // Menus pause this scene; it is ready for taps again when they close.
+    this.events.on(Phaser.Scenes.Events.RESUME, () => (this.busy = false));
 
     const { x, y } = s.state.position;
     this.player = this.add.image(x * TILE + TILE / 2, y * TILE + TILE / 2, PLAYER_TEXTURE).setDepth(10);
@@ -96,13 +101,20 @@ export class OverworldScene extends Phaser.Scene {
         width: 100,
         height: 88,
         onTap: () => {
-          if (this.busy) return;
+          if (this.busy || this.pendingMenu) return;
           this.stop();
-          openMenu(this, key);
+          if (this.walking) this.pendingMenu = key;
+          else this.openMenuNow(key);
         },
       });
       pinToScreen(b).setDepth(500);
     });
+  }
+
+  private openMenuNow(key: string): void {
+    this.busy = true; // one menu at a time, even with two fingers
+    this.pendingMenu = null;
+    openMenu(this, key);
   }
 
   private walkTo(tapped: Point): void {
@@ -122,6 +134,8 @@ export class OverworldScene extends Phaser.Scene {
       this.walking = false;
       this.stepTarget = null;
       if (!this.busy) session().save(); // stopped walking: remember where we are
+      if (this.pendingMenu && !this.busy) this.openMenuNow(this.pendingMenu);
+      else this.pendingMenu = null;
       return;
     }
     this.walking = true;

@@ -11,6 +11,17 @@ import { speaker } from '../ui/speech';
 import { MenuScene } from './menuBase';
 
 const PER_PAGE = 8;
+
+/** Taps that start and end on the same object (not a slide from elsewhere, or a second finger). */
+function onTap(obj: Phaser.GameObjects.GameObject, fn: () => void): void {
+  let pressed = false;
+  obj.on('pointerdown', () => (pressed = true));
+  obj.on('pointerout', () => (pressed = false));
+  obj.on('pointerup', () => {
+    if (pressed) fn();
+    pressed = false;
+  });
+}
 const TYPE_WORD = { fire: 'Fire', water: 'Water', leaf: 'Leaf' } as const;
 
 export class BookScene extends MenuScene {
@@ -60,7 +71,7 @@ export class BookScene extends MenuScene {
     const name = row.status === 'caught' ? row.species.name : `${row.species.name}?`;
     t.add([pic, this.add.text(0, 75, name, { fontFamily: FONT, fontSize: '26px', fontStyle: 'bold', color: '#1d2b3a' }).setOrigin(0.5)]);
     t.setSize(200, 220).setInteractive({ useHandCursor: true });
-    t.on('pointerup', () => this.showBig(row));
+    onTap(t, () => this.showBig(row));
     return t;
   }
 
@@ -80,6 +91,9 @@ export class BookScene extends MenuScene {
       .setOrigin(0.5);
     layer.add([shade, g, pic, label]);
     this.tweens.add({ targets: pic, scale: pic.scale * 1.06, yoyo: true, repeat: -1, duration: 500 });
-    shade.on('pointerup', () => layer.destroy(true));
+    onTap(shade, () => {
+      this.tweens.killTweensOf(pic);
+      layer.destroy(true);
+    });
   }
 }
