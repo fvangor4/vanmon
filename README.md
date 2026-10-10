@@ -1,0 +1,44 @@
+# VanMon
+
+A creature-catching adventure made for two young explorers (ages 5 and 7) to play
+on their iPads. Walk through the tall grass, meet wild creatures, pick the move
+that beats their color, and catch them for your team. Every message can be read
+aloud with the 🔊 button, so you don't need to be able to read to play.
+
+**Play:** https://fvangor4.github.io/vanmon/
+
+## Put it on an iPad
+
+1. Open the link above in **Safari** (not Chrome) on the iPad.
+2. Tap the **Share** button, then **Add to Home Screen**, then **Add**.
+3. Open VanMon from its new icon. It runs full-screen and works offline after the first launch.
+
+Each iPad keeps its own saved game. To start over, hold **Hold for New** on the
+title screen until the bar fills up. The old game is kept in a backup.
+
+## How to play
+
+- **Walk:** tap anywhere and your character walks there.
+- **Tall grass:** this is where wild creatures hide.
+- **Battles:** 🔥 beats 🍃, 🍃 beats 💧, 💧 beats 🔥. Use ⚔️ Fight, 🎯 Catch, 🔄 Swap or 🏃 Run.
+- **Getting tired:** if your creature gets sleepy, everyone goes home for a nap. Nothing is lost.
+- **Home:** step on your front door to heal everyone. The 📦 Box button (in Home Town) lets you change who is on your team.
+- **🎒 Team** picks who goes first. **📖 Book** shows every creature you've met.
+
+## Adding the kids' own creatures
+
+See [docs/ADDING_CREATURES.md](docs/ADDING_CREATURES.md).
+
+## For grown-ups who code
+
+```bash
+npm install
+npm run dev      # play at http://localhost:5173 (and on the iPad via your Mac's IP)
+npm test         # game rules, saves, maps, creature data
+npm run build    # tests + production build into dist/
+npm run preview  # try the production build at http://localhost:4173/vanmon/
+```
+
+Built with [Phaser 3](https://phaser.io), TypeScript and Vite. Game rules live in
+`src/logic/` (all tested); screens live in `src/scenes/`. Pushing to `main`
+deploys automatically with GitHub Actions.

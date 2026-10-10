@@ -52,9 +52,10 @@ describe('validateCreatureData', () => {
     expect(data.moves).toHaveLength(3);
   });
 
-  it('accepts the shipped creatures.json with 6 species covering all 3 types', () => {
+  // Parents add creatures to this file, so check its health, not its exact contents.
+  it('accepts the shipped creatures.json, with every type represented', () => {
     const data = validateCreatureData(shipped);
-    expect(data.species).toHaveLength(6);
+    expect(data.species.length).toBeGreaterThanOrEqual(3);
     expect(new Set(data.species.map((s) => s.type))).toEqual(new Set(['fire', 'water', 'leaf']));
   });
 

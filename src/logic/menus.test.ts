@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { bookEntries, bookProgress, pageCount, pageOf } from './menus';
-import { validateCreatureData } from './creatures';
-import shipped from '../../public/data/creatures.json';
+import type { CreatureData, SpeciesDef } from './creatures';
 
-const data = validateCreatureData(shipped);
+const sp = (id: string): SpeciesDef => ({
+  id, name: id, type: 'fire', image: `${id}.svg`, baseStats: { hp: 50, attack: 50, defense: 50 }, moves: ['bump', 'spark'],
+});
+const data: CreatureData = {
+  moves: [],
+  species: ['emberpup', 'toastle', 'puddlefin', 'bubbloo', 'sproutle', 'leafbun'].map(sp),
+};
 
 describe('bookEntries', () => {
   it('lists every species in creatures.json order with caught / seen / unknown', () => {
