@@ -13,7 +13,12 @@ aloud with the 🔊 button, so you don't need to be able to read to play.
 2. Tap the **Share** button, then **Add to Home Screen**, then **Add**.
 3. Open VanMon from its new icon. It runs full-screen and works offline after the first launch.
 
-Each iPad keeps its own saved game. To start over, hold **Hold for New** on the
+Always play from the Home Screen icon. Safari and the Home Screen app keep
+**separate** saved games on iPad, so progress made in a Safari tab won't carry over.
+
+Each iPad keeps its own saved game. New versions (like a newly added creature)
+download in the background and switch in at the title screen; if one doesn't show
+up, close VanMon fully and open it again. To start over, hold **Hold for New** on the
 title screen until the bar fills up. The old game is kept in a backup.
 
 ## How to play
