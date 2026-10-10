@@ -7,6 +7,13 @@
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
     />
     <title>VanMon</title>
+    <meta name="theme-color" content="#1d2b3a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="VanMon" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" href="icons/icon-192.png" />
     <style>
       html,
       body {
@@ -25,6 +32,34 @@
       #game canvas {
         touch-action: none;
       }
+      /* "Turn your iPad sideways" — shown only in portrait. */
+      #rotate {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        background: #1d2b3a;
+        color: #ffd84a;
+        font: bold 40px system-ui, -apple-system, sans-serif;
+        text-align: center;
+      }
+      #rotate .phone {
+        font-size: 140px;
+        animation: tilt 1.6s ease-in-out infinite;
+      }
+      @keyframes tilt {
+        0%, 30% { transform: rotate(0deg); }
+        60%, 100% { transform: rotate(-90deg); }
+      }
+      @media (orientation: portrait) {
+        #rotate {
+          display: flex;
+        }
+      }
       #game {
         width: 100vw;
         height: 100vh;
@@ -33,6 +68,7 @@
     </style>
   </head>
   <body>
+    <div id="rotate" aria-live="polite"><div class="phone">📱</div><div>Turn your iPad sideways!</div></div>
     <div id="game"></div>
     <script>
       // iOS Safari still fires pinch-zoom gestures; cancel them so little fingers can't zoom the page.
