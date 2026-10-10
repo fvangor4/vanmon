@@ -7,6 +7,13 @@ const fail = (msg) => {
   process.exit(1);
 };
 
+// GitHub Pages serves the game under /vanmon/; root-relative asset URLs would load a blank page.
+const html = readFileSync('dist/index.html', 'utf8');
+const assetUrls = [...html.matchAll(/(?:src|href)="([^"]+)"/g)].map((m) => m[1]).filter((u) => !u.startsWith('http'));
+const wrongBase = assetUrls.filter((u) => u.startsWith('/') && !u.startsWith('/vanmon/'));
+if (wrongBase.length > 0) fail(`index.html points outside /vanmon/: ${wrongBase.join(', ')}`);
+if (!assetUrls.some((u) => u.startsWith('/vanmon/assets/'))) fail('index.html does not load the game from /vanmon/assets/');
+
 const manifest = JSON.parse(readFileSync('dist/manifest.webmanifest', 'utf8'));
 if (manifest.start_url !== '.' || manifest.scope !== '.') fail('manifest start_url/scope must be "." (relative to /vanmon/)');
 for (const icon of manifest.icons) readFileSync(`dist/${icon.src}`); // throws if an icon is missing

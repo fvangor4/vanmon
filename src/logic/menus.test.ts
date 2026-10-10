@@ -11,7 +11,7 @@ const data: CreatureData = {
 };
 
 describe('bookEntries', () => {
-  it('lists every species in creatures.json order with caught / seen / unknown', () => {
+  it('lists every species in data order with caught / seen / unknown', () => {
     const entries = bookEntries(data, { emberpup: 'caught', bubbloo: 'seen', ghost: 'caught' });
     expect(entries.map((e) => [e.species.id, e.status])).toEqual([
       ['emberpup', 'caught'],

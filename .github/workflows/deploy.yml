@@ -1,5 +1,8 @@
 # Builds VanMon (tests run as part of `npm run build`) and publishes it to
 # GitHub Pages on every push to main: https://fvangor4.github.io/vanmon/
+# One-time setup: the repo is github.com/fvangor4/vanmon (the name must match
+# the /vanmon/ base in vite.config.ts) and Settings → Pages → Source is
+# "GitHub Actions".
 name: Deploy to GitHub Pages
 
 on:
@@ -12,9 +15,10 @@ permissions:
   pages: write
   id-token: write
 
+# Let an in-progress deploy finish; a newer push waits its turn.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:

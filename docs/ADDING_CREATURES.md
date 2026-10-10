@@ -17,6 +17,13 @@ picture in `public/creatures/`. Adding a new one needs no code.
 
 ## Doing it by hand
 
+First time only: install the tools with `npm install`.
+
+> ⚠️ **Never change or remove an existing `id`.** Saved games remember creatures
+> by their `id`, so renaming `sparkle-kitty` to `sparkly-kitty` would make every
+> Sparkle Kitty the kids already caught disappear. To fix a spelling, change the
+> `name` instead. The same goes for existing move ids.
+
 ### 1. Make the picture
 
 - Crop the drawing to a **square**, with the creature filling most of it.
@@ -68,18 +75,25 @@ Keep `power` between 35 and 50 so battles stay gentle.
 ### 3. Check it
 
 ```bash
-npm test
+npm run build
 ```
 
-If anything is wrong, the test says exactly what to fix (for example,
-`species "sparkle-kitty": needs one normal move and one fire move`). The game
-shows the same kind of message on screen if a broken file ever gets published.
+This runs the same checks as the website deploy: the creature rules, the game
+tests, and a check that every picture can be saved for offline play (pictures
+must be under 8 MB; about 512×512 is plenty). If anything is wrong, it says
+exactly what to fix, for example
+`species "sparkle-kitty": needs one normal move and one fire move`.
 
 ### 4. Publish it
 
-Commit and push to `main`. GitHub Actions runs the tests and updates the site
-in a minute or two. The iPads pick up the new version the next time VanMon is
-opened. If it doesn't appear yet, close the app fully and open it again.
+Commit and push to `main`. GitHub Actions runs the same checks and updates the
+site in a minute or two. The iPads pick up the new version the next time VanMon
+is opened. If it doesn't appear yet, close the app fully and open it again.
+
+**If the deploy fails**, the site simply stays on the old version (nothing
+breaks for the kids). You'll see a red ✗ next to the commit on GitHub, and
+GitHub emails you. Open the **Actions** tab, click the failed run, then the
+`npm run build` step: the message there says what to fix, just like step 3.
 
 The new creature shows up in the tall grass of its area, and in the 📖 Creature
 Book as ❓ until someone meets it.

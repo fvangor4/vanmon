@@ -46,4 +46,6 @@ npm run preview  # try the production build at http://localhost:4173/vanmon/
 
 Built with [Phaser 3](https://phaser.io), TypeScript and Vite. Game rules live in
 `src/logic/` (all tested); screens live in `src/scenes/`. Pushing to `main`
-deploys automatically with GitHub Actions.
+deploys automatically with GitHub Actions (Node 24+). One-time setup: the GitHub
+repo must be named `vanmon` (to match the `/vanmon/` base in `vite.config.ts`), and
+**Settings → Pages → Source** must be set to **GitHub Actions**.
