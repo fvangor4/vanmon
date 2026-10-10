@@ -55,15 +55,17 @@
         0%, 30% { transform: rotate(0deg); }
         60%, 100% { transform: rotate(-90deg); }
       }
-      @media (orientation: portrait) {
-        #rotate {
-          display: flex;
-        }
+      /* src/ui/rotatePrompt.ts sets this from the iPad's real orientation. */
+      #rotate.show {
+        display: flex;
       }
+      /* Keep the game clear of the status bar and home indicator in the installed app. */
       #game {
-        width: 100vw;
-        height: 100vh;
-        height: 100dvh;
+        position: fixed;
+        top: env(safe-area-inset-top);
+        right: env(safe-area-inset-right);
+        bottom: env(safe-area-inset-bottom);
+        left: env(safe-area-inset-left);
       }
     </style>
   </head>

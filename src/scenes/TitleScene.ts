@@ -7,6 +7,7 @@ import { pickStarters } from '../logic/starters';
 import { creatureTexture, Session, setSession, type BootResult } from '../session';
 import { BigButton, COLORS, FONT } from '../ui/Button';
 import { HoldButton } from '../ui/HoldButton';
+import { applyUpdateIfReady } from '../pwa';
 import { speaker } from '../ui/speech';
 
 export class TitleScene extends Phaser.Scene {
@@ -15,6 +16,7 @@ export class TitleScene extends Phaser.Scene {
   }
 
   create(): void {
+    if (applyUpdateIfReady()) return; // reloading into the new version
     const boot = this.registry.get('boot') as BootResult;
     const g = this.add.graphics();
     g.fillGradientStyle(0x8fd3ff, 0x8fd3ff, 0xc9f0a6, 0xc9f0a6).fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);

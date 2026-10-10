@@ -9,9 +9,9 @@ export default defineConfig(({ mode }) => ({
   build: { chunkSizeWarningLimit: 2000 },
   plugins: [
     VitePWA({
-      // New versions install in the background and take over on the next launch.
-      registerType: 'autoUpdate',
-      includeAssets: ['icons/apple-touch-icon.png'],
+      // New versions download in the background; src/pwa.ts switches to them on the title screen.
+      registerType: 'prompt',
+      injectRegister: false,
       manifest: {
         name: 'VanMon',
         short_name: 'VanMon',
@@ -25,14 +25,15 @@ export default defineConfig(({ mode }) => ({
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {
         // Everything the game needs, so it plays offline (car rides!) after the first visit,
         // including creatures.json and every creature picture.
-        globPatterns: ['**/*.{js,css,html,svg,png,jpg,jpeg,webp,json}'],
-        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        // (Upper- and lowercase: iPad photos are named like IMG_1234.JPG.)
+        globPatterns: ['**/*.{js,css,html,json,svg,png,jpg,jpeg,webp,SVG,PNG,JPG,JPEG,WEBP}'],
+        // scripts/check-dist.mjs fails the build if a creature picture is still left out.
+        maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
       },
     }),
   ],

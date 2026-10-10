@@ -8,9 +8,13 @@ import { PartyScene } from './scenes/PartyScene';
 import { OverworldScene } from './scenes/OverworldScene';
 import { StarterScene } from './scenes/StarterScene';
 import { TitleScene } from './scenes/TitleScene';
+import { startUpdates } from './pwa';
+import { watchOrientation } from './ui/rotatePrompt';
 import { unlockSpeechOnFirstTouch } from './ui/speech';
 
 unlockSpeechOnFirstTouch(document);
+watchOrientation(document.getElementById('rotate')!);
+if (import.meta.env.PROD) startUpdates();
 
 const game = new Phaser.Game({
   type: Phaser.AUTO,
