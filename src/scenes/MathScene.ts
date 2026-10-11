@@ -32,6 +32,8 @@ export class MathScene extends Phaser.Scene {
   private answers: BigButton[] = [];
   /** True while a right answer is being cheered, so extra taps do nothing. */
   private busy = false;
+  /** The last thing read aloud (what 🔊 repeats). */
+  private lastLine = '';
 
   constructor() {
     super('Math');
@@ -60,7 +62,7 @@ export class MathScene extends Phaser.Scene {
       .text(GAME_WIDTH / 2, 70, `${npc.name}'s math!`, { fontFamily: FONT, fontSize: '48px', fontStyle: 'bold', color: '#1d2b3a' })
       .setOrigin(0.5);
     new BigButton(this, 80, 70, { icon: '✖️', color: COLORS.normal, width: 110, height: 90, onTap: () => this.leave() });
-    new BigButton(this, GAME_WIDTH - 80, 70, { icon: '🔊', color: COLORS.sky, width: 110, height: 90, onTap: () => speaker.say(this.nowSaying()) });
+    new BigButton(this, GAME_WIDTH - 80, 70, { icon: '🔊', color: COLORS.sky, width: 110, height: 90, onTap: () => speaker.say(this.lastLine) });
     this.stars = this.quiz.map((_, i) =>
       this.add.text(GAME_WIDTH / 2 + (i - 1) * 80, 150, '☆', { fontFamily: FONT, fontSize: '56px', color: '#b8860b' }).setOrigin(0.5),
     );
@@ -71,10 +73,10 @@ export class MathScene extends Phaser.Scene {
     this.showProblem();
   }
 
-  /** What 🔊 repeats: the current question, or the cheer once all three are done. */
-  private nowSaying(): string {
-    const p = this.quiz[this.index];
-    return p ? question(p) : ALL_DONE;
+  /** Says a line and remembers it, so 🔊 repeats whatever the screen is showing now. */
+  private sayLine(text: string): void {
+    this.lastLine = text;
+    speaker.say(text);
   }
 
   private showProblem(): void {
@@ -92,7 +94,7 @@ export class MathScene extends Phaser.Scene {
         }),
     );
     this.busy = false;
-    speaker.say(question(p));
+    this.sayLine(question(p));
   }
 
   private async answer(n: number, button: BigButton): Promise<void> {
@@ -119,7 +121,7 @@ export class MathScene extends Phaser.Scene {
     this.answers.forEach((b) => b.destroy());
     this.answers = [];
     this.problemText.setText('🎉');
-    speaker.say(ALL_DONE);
+    this.sayLine(ALL_DONE);
     await this.wait(2200);
     this.startBattle();
   }
@@ -136,8 +138,8 @@ export class MathScene extends Phaser.Scene {
       // kindly and go back to town rather than leaving a child on this screen.
       console.error('VanMon math error', err);
       this.problemText.setText('😅');
-      speaker.say("Oops! Let's head back.");
-      this.time.delayedCall(1800, () => this.leave());
+      this.sayLine("Oops! Let's head back.");
+      this.time.delayedCall(3000, () => this.leave()); // long enough to hear it
     }
   }
 
