@@ -23,9 +23,11 @@ export function floodFill(
   const sy = Math.floor(y);
   if (!(sx >= 0 && sx < width && sy >= 0 && sy < height)) return false;
 
+  // Stored the way the pixels are (whole numbers 0-255), so "already that color" compares like with like.
+  const paint = Uint8ClampedArray.from(color);
   const start = (sy * width + sx) * 4;
   const seed = [pixels[start], pixels[start + 1], pixels[start + 2], pixels[start + 3]];
-  if (seed.every((v, c) => v === color[c])) return false;
+  if (seed.every((v, c) => v === paint[c])) return false;
 
   const matches = (i: number) =>
     Math.abs(pixels[i] - seed[0]) <= tolerance &&
@@ -39,7 +41,7 @@ export function floodFill(
   visited[stack[0]] = 1;
   while (stack.length > 0) {
     const p = stack.pop()!;
-    pixels.set(color, p * 4);
+    pixels.set(paint, p * 4);
     const px = p % width;
     const neighbors = [
       px > 0 ? p - 1 : -1,

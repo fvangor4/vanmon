@@ -84,6 +84,16 @@ describe('floodFill', () => {
     ]);
   });
 
+  it('never wraps from one edge of the picture to the other', () => {
+    const left = image(['##.', '.##']);
+    floodFill(left.pixels, left.width, left.height, 0, 1, RED, 0);
+    expect(rows(left)).toEqual(['##.', 'R##']);
+
+    const right = image(['##.', '.##']);
+    floodFill(right.pixels, right.width, right.height, 2, 0, RED, 0);
+    expect(rows(right)).toEqual(['##R', '.##']);
+  });
+
   it('treats nearly matching colors as the same area when given a tolerance', () => {
     const img = image(['..~~', '#~..']);
     floodFill(img.pixels, img.width, img.height, 0, 0, RED, 0);
@@ -92,6 +102,17 @@ describe('floodFill', () => {
     const img2 = image(['..~~', '#~..']);
     floodFill(img2.pixels, img2.width, img2.height, 0, 0, RED, 16);
     expect(rows(img2)).toEqual(['RRRR', '#RRR']);
+  });
+
+  it('counts a color exactly at the tolerance as matching', () => {
+    // '~' differs from white by at most 7 in any channel.
+    const atLimit = image(['.~']);
+    floodFill(atLimit.pixels, atLimit.width, atLimit.height, 0, 0, RED, 7);
+    expect(rows(atLimit)).toEqual(['RR']);
+
+    const underLimit = image(['.~']);
+    floodFill(underLimit.pixels, underLimit.width, underLimit.height, 0, 0, RED, 6);
+    expect(rows(underLimit)).toEqual(['R.']);
   });
 
   it('finishes when the fill color is within tolerance of the tapped color', () => {
@@ -107,6 +128,9 @@ describe('floodFill', () => {
     const before = img.pixels.slice();
     expect(floodFill(img.pixels, img.width, img.height, 0, 0, WHITE, 0)).toBe(false);
     expect(img.pixels).toEqual(before);
+
+    // The same color written with out-of-range or fractional numbers is still "already that color".
+    expect(floodFill(img.pixels, img.width, img.height, 0, 0, [255.2, 300, 254.8, 255], 0)).toBe(false);
   });
 
   it('changes nothing when the tap is outside the picture', () => {
