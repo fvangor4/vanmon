@@ -34,12 +34,27 @@ describe('UndoHistory', () => {
     expect(undone[19]).toBe(6);
   });
 
-  it('forgets everything when cleared', () => {
+  it('steps back one change at a time when drawing and undoing are mixed', () => {
+    const h = new UndoHistory<string>();
+    h.push('blank');
+    h.push('head');
+    expect(h.undo()).toBe('head');
+    h.push('head again');
+    expect(h.undo()).toBe('head again');
+    expect(h.undo()).toBe('blank');
+    expect(h.undo()).toBeUndefined();
+  });
+
+  it('forgets everything from before a clear, then keeps working', () => {
     const h = new UndoHistory<string>();
     h.push('a');
     h.push('b');
     h.clear();
     expect(h.canUndo).toBe(false);
+    expect(h.undo()).toBeUndefined();
+
+    h.push('after clear');
+    expect(h.undo()).toBe('after clear');
     expect(h.undo()).toBeUndefined();
   });
 });
