@@ -122,9 +122,10 @@ rigor:
 - [x] 5. 🎨 HUD button opens DrawScene with the same guards as 🎒/📖.
       files: src/scenes/OverworldScene.ts
       commits: [3c734f9]
-- [~] 6. Fill bucket and Undo in DrawScene (using tasks 1 and 2). Hold-to-clear
+- [x] 6. Fill bucket and Undo in DrawScene (using tasks 1 and 2). Hold-to-clear
       with `HoldButton` clears the canvas and the stored drawing.
       files: src/scenes/DrawScene.ts
+      commits: [683d1af, 5ba8448]
 - [ ] 7. Type picker (🔥/💧/🍃, tap again to unset, stored), and the "Done!" clean
       view: only the drawing and type, with the spoken and fading screenshot hint. Tap
       anywhere to return. 🔊 on the drawing screen reads its instructions.
@@ -172,3 +173,8 @@ rigor:
   - A 2 s hold blanks the canvas, removes `vanmon.drawing` and disables Undo.
   - Drew a closed box, red fill inside: 59,415 red pixels, outside untouched.
   - Undo removed the fill: 0 red pixels, box intact.
+- task 6 review findings:
+  - spec (1) / code (2): Clear was ignored while a restore was pending → fixed in 5ba8448. Clear now cancels the pending restore with a `restoreId` token.
+  - code (1): setEnabled on every snapshot cancelled an Undo press → fixed: Undo only redraws on a change.
+  - spec (2): no scene-level tests → accepted per the contract (no unit-test seam); covered by the browser check.
+  - Re-review pass.
