@@ -114,10 +114,11 @@ rigor:
       wrong-version and throwing stores, and has a clear() function.
       files: src/logic/drawingStore.ts, src/logic/drawingStore.test.ts
       commits: [5f02e59, 48d36eb]
-- [~] 4. DrawScene basics: a canvas you can draw on with a finger, 8 crayon colors,
+- [x] 4. DrawScene basics: a canvas you can draw on with a finger, 8 crayon colors,
       thin and thick brushes, eraser, and ❌ close back to the Overworld via `menuBase`.
       It restores and saves the drawing via task 3. Registered in `main.ts`.
       files: src/scenes/DrawScene.ts, src/main.ts
+      commits: [f1e3f08, e2e777a]
 - [ ] 5. 🎨 HUD button opens DrawScene with the same guards as 🎒/📖.
       files: src/scenes/OverworldScene.ts
 - [ ] 6. Fill bucket and Undo in DrawScene (using tasks 1 and 2). Hold-to-clear
@@ -154,3 +155,10 @@ rigor:
   - (7) Junk left in storage on a failed load → accepted. The first stroke overwrites it, and deleting a wrong-version entry would destroy a newer game's drawing.
   - Re-review pass.
 - task 4: implemented. Checked in the browser pane: thick black, thin red and eraser strokes draw. The drawing is stored (16 KB) and restored after a page reload. A corrupt stored value gives a blank canvas with no console errors. ❌ close not yet exercised from the overworld; that comes in task 5. The canvas texture is kept between visits so returning is instant. The store is a module-level `browserStore()`, because session's store is private and session.ts is outside this task.
+- task 4 review, spec findings:
+  - (1) ❌ also writes the saved game through MenuScene.close → accepted. All menus do this, and the state is unchanged.
+  - (2) `keep()` hard-codes `type: null` → task 7 must carry the chosen type into `keep()` and restore it.
+  - (3) The onerror path was untested → now warns. Browser check: an undecodable PNG gives a blank canvas plus a warning.
+  - (4) ❌ return and reopening in-session not yet checked → verify in task 5.
+- task 4 review, code findings: all fixed in e2e777a. The restore race moved to module scope, closing mid-stroke now saves on SHUTDOWN, onerror warns, refresh happens once per frame in update(), and the blanket input.off was removed. Re-review pass.
+- Browser pane note: when the pane is hidden, rAF stops. Step frames with `__game.loop.step(performance.now())`.
