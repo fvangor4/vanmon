@@ -61,8 +61,11 @@ export interface GameMap {
   isWalkable(x: number, y: number): boolean;
   warpAt(x: number, y: number): Warp | undefined;
   npcAt(x: number, y: number): NpcSpot | undefined;
-  /** An NPC directly up, down, left or right of (x, y). */
-  npcNextTo(x: number, y: number): NpcSpot | undefined;
+}
+
+/** True when `a` is one step up, down, left or right of `b` (where you stand to talk to someone). */
+export function isBeside(a: Point, b: Point): boolean {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y) === 1;
 }
 
 export function parseMap(def: MapDef): GameMap {
@@ -109,7 +112,6 @@ export function parseMap(def: MapDef): GameMap {
     isWalkable: (x, y) => isOpenGround(x, y) && !npcAt(x, y),
     warpAt,
     npcAt,
-    npcNextTo: (x, y) => STEPS.map((s) => npcAt(x + s.x, y + s.y)).find((n) => n !== undefined),
   };
 }
 

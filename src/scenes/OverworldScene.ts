@@ -6,7 +6,7 @@ import { GAME_WIDTH } from '../config';
 import { createCreature, type Creature } from '../logic/creatures';
 import { rollEncounter, speciesForArea } from '../logic/encounters';
 import { healAll, markSeen } from '../logic/gameState';
-import { findPath, parseMap, type GameMap, type NpcSpot, type Point } from '../logic/map';
+import { findPath, isBeside, parseMap, type GameMap, type NpcSpot, type Point } from '../logic/map';
 import { NPCS, npcGreeting } from '../logic/npcs';
 import { AREAS, MAPS } from '../data/maps';
 import { session } from '../session';
@@ -14,11 +14,9 @@ import { BigButton, COLORS, FONT, pinToScreen } from '../ui/Button';
 import { DialogBox } from '../ui/DialogBox';
 import { openMenu } from './menuBase';
 import type { MathLaunch } from './MathScene';
-import { GOLD_KID_TEXTURE, PLAYER_TEXTURE, TILE, tileTexture } from './textures';
+import { PLAYER_TEXTURE, TILE, tileTexture } from './textures';
 
 const STEP_MS = 160;
-/** How each NPC looks on the map. */
-const NPC_TEXTURES: Record<string, string> = { 'gold-kid': GOLD_KID_TEXTURE };
 
 export interface BattleLaunch {
   /** The creature to battle (an NPC's creature when `npc` is set). */
@@ -96,11 +94,8 @@ export class OverworldScene extends Phaser.Scene {
   /** NPCs stand on their tiles with a bobbing speech bubble, so kids know to tap them. */
   private drawNpcs(): void {
     for (const n of this.map.def.npcs ?? []) {
-      const texture = NPC_TEXTURES[n.id];
-      if (!texture) {
-        console.error(`VanMon: no picture for NPC "${n.id}"`);
-        continue;
-      }
+      // Every map NPC is a known NPC (checked by a test in map.test.ts).
+      const texture = NPCS[n.id].texture;
       const cx = n.x * TILE + TILE / 2;
       const cy = n.y * TILE + TILE / 2;
       const sprite = this.add.image(cx, cy, texture).setDepth(9);
@@ -256,8 +251,7 @@ export class OverworldScene extends Phaser.Scene {
   }
 
   private isNextTo(npc: NpcSpot): boolean {
-    const { x, y } = session().state.position;
-    return Math.abs(x - npc.x) + Math.abs(y - npc.y) === 1;
+    return isBeside(session().state.position, npc);
   }
 
   /** Tapped an NPC: talk now if right next to it, otherwise walk over first. */

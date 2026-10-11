@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findPath, parseMap, type GameMap, type MapDef, type Point } from './map';
+import { findPath, isBeside, parseMap, type GameMap, type MapDef, type Point } from './map';
 import { MAPS, START } from '../data/maps';
 import { NPCS } from './npcs';
 
@@ -55,12 +55,10 @@ describe('NPCs on a map', () => {
     expect(m.npcAt(0, 0)).toBeUndefined();
   });
 
-  it('knows which NPC is right next to you (not diagonal)', () => {
-    const m = parseMap(def(['...', '...', '...'], { npcs: [{ id: 'gold-kid', x: 1, y: 1 }] }));
-    for (const p of [{ x: 1, y: 0 }, { x: 0, y: 1 }, { x: 2, y: 1 }, { x: 1, y: 2 }]) {
-      expect(m.npcNextTo(p.x, p.y)?.id, JSON.stringify(p)).toBe('gold-kid');
-    }
-    for (const p of [{ x: 0, y: 0 }, { x: 2, y: 2 }]) expect(m.npcNextTo(p.x, p.y)).toBeUndefined();
+  it('knows when you are right beside someone (one step, not diagonal)', () => {
+    const npc = { x: 1, y: 1 };
+    for (const p of [{ x: 1, y: 0 }, { x: 0, y: 1 }, { x: 2, y: 1 }, { x: 1, y: 2 }]) expect(isBeside(p, npc), JSON.stringify(p)).toBe(true);
+    for (const p of [{ x: 0, y: 0 }, { x: 2, y: 2 }, { x: 1, y: 1 }, { x: 1, y: 3 }]) expect(isBeside(p, npc), JSON.stringify(p)).toBe(false);
   });
 
   it('tapping an NPC walks you to the spot right next to it', () => {

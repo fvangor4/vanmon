@@ -2,6 +2,7 @@
 
 import Phaser from 'phaser';
 import type { TileKind } from '../logic/map';
+import { GOLD_KID } from '../logic/npcs';
 
 export const TILE = 64;
 
@@ -11,7 +12,7 @@ export function tileTexture(kind: TileKind | 'roof'): string {
 
 export const PLAYER_TEXTURE = 'player';
 /** The Gold Kid NPC: the player sprite, all in gold. */
-export const GOLD_KID_TEXTURE = 'gold-kid';
+export const GOLD_KID_TEXTURE = GOLD_KID.texture;
 
 type Draw = (g: Phaser.GameObjects.Graphics) => void;
 

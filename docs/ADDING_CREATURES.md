@@ -65,7 +65,7 @@ would replace a starter. Creatures with `"wild": false` are never starters.)
 | `baseStats` | Whole numbers. Around 40–65 keeps things fair; higher is stronger. |
 | `moves` | Exactly two: one **normal** move and one move of the creature's own type. |
 | `areas` | `"route"`, `"pond"`, or both. Leave the line out to have it appear everywhere. |
-| `wild` | Optional. `false` means it never appears in the tall grass. Leave out `areas` when you use it. Only an NPC can then give it to the kids (Super Shadehog is the Gold Kid's prize), and adding a new NPC needs a code change in `src/logic/npcs.ts`, so ask Claude. |
+| `wild` | Optional. `false` means it never appears in the tall grass. Leave out `areas` when you use it. Only an NPC can then give it to the kids (Super Shadehog is the Gold Kid's prize). A new NPC needs code (its entry in `src/logic/npcs.ts`, a spot in `src/data/maps.ts`, and a picture in `src/scenes/textures.ts`), so ask Claude. |
 
 Moves you can use today:
 
