@@ -48,6 +48,18 @@ describe('speciesForArea', () => {
       else expect(inGrass, s.id).toContain(s.id);
     }
   });
+
+  it('keeps the kids\' pond creatures at the pond only, with Shiny Zoomhog rare', () => {
+    const creatures = validateCreatureData(shipped);
+    const pond = speciesForArea(creatures, 'pond').map((s) => s.id);
+    const route = speciesForArea(creatures, 'route').map((s) => s.id);
+    for (const id of ['shiny-zoomhog', 'xpeoon']) {
+      expect(pond, id).toContain(id);
+      expect(route, id).not.toContain(id);
+    }
+    expect(creatures.species.find((s) => s.id === 'shiny-zoomhog')?.rare).toBe(true);
+    expect(creatures.species.find((s) => s.id === 'xpeoon')?.rare).toBeUndefined();
+  });
 });
 
 describe('rollEncounter', () => {

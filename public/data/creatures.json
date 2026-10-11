@@ -106,6 +106,25 @@
       "baseStats": { "hp": 55, "attack": 65, "defense": 45 },
       "moves": ["night-dash", "flame-dash"],
       "wild": false
+    },
+    {
+      "id": "shiny-zoomhog",
+      "name": "Shiny Zoomhog",
+      "type": "water",
+      "image": "shiny-zoomhog.svg",
+      "baseStats": { "hp": 45, "attack": 60, "defense": 45 },
+      "moves": ["zoom-roll", "wave-dash"],
+      "areas": ["pond"],
+      "rare": true
+    },
+    {
+      "id": "xpeoon",
+      "name": "Xpeoon",
+      "type": "fire",
+      "image": "xpeoon.svg",
+      "baseStats": { "hp": 55, "attack": 50, "defense": 45 },
+      "moves": ["swipe", "spark"],
+      "areas": ["pond"]
     }
   ]
 }
