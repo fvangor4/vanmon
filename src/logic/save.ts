@@ -11,16 +11,19 @@ import { MAPS, START } from '../data/maps';
 
 export const SAVE_KEY = 'vanmon.save';
 export const BACKUP_KEY = 'vanmon.save.backup';
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 /** How many past problem saves to keep in BACKUP_KEY. */
 const MAX_BACKUPS = 5;
 
 /**
  * Upgrades from older save versions: MIGRATIONS[n] turns a version-n `state`
- * into version n+1. Empty until the save format first changes.
+ * into version n+1.
  */
 export type Migrations = Record<number, (state: unknown) => unknown>;
-const MIGRATIONS: Migrations = {};
+const MIGRATIONS: Migrations = {
+  // 1 → 2: NPCs arrived (the Gold Kid). Nobody has beaten one yet.
+  1: (state) => (isRecord(state) ? { ...state, npcsBeaten: [] } : state),
+};
 
 /** The bits of localStorage we use, so tests can pass a fake. */
 export interface KeyValueStore {
@@ -267,7 +270,10 @@ function repairState(
   if (dropped.length > 0) backup(store, raw, 'some creatures could not be loaded', dropped);
   const problems: string[] = [];
   const position = repairPosition(s.position, maps, problems);
-  const result: LoadResult = { state: { party, box, book, position } };
+  const npcsBeaten = Array.isArray(s.npcsBeaten)
+    ? [...new Set(s.npcsBeaten.filter((id): id is string => typeof id === 'string' && id.length > 0))]
+    : [];
+  const result: LoadResult = { state: { party, box, book, position, npcsBeaten } };
   if (problems.length > 0) result.problem = problems.join('; ');
   return result;
 }

@@ -21,6 +21,8 @@ export interface GameState {
   /** Species the player has met, by species id. */
   book: Record<string, BookEntry>;
   position: Position;
+  /** NPCs the player has beaten at least once, by NPC id (their prize is given only once). */
+  npcsBeaten: string[];
 }
 
 export function newGame(starter: Creature): GameState {
@@ -29,6 +31,7 @@ export function newGame(starter: Creature): GameState {
     box: [],
     book: { [starter.speciesId]: 'caught' },
     position: { ...START },
+    npcsBeaten: [],
   };
 }
 

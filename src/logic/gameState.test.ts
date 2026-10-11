@@ -47,6 +47,7 @@ describe('newGame', () => {
     expect(g.box).toEqual([]);
     expect(g.book).toEqual({ firey: 'caught' });
     expect(g.position).toEqual(START);
+    expect(g.npcsBeaten).toEqual([]);
   });
 });
 
