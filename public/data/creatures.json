@@ -125,6 +125,26 @@
       "baseStats": { "hp": 55, "attack": 50, "defense": 45 },
       "moves": ["swipe", "spark"],
       "areas": ["pond"]
+    },
+    {
+      "id": "shiny-twintail",
+      "name": "Shiny Twintail",
+      "type": "leaf",
+      "image": "shiny-twintail.svg",
+      "baseStats": { "hp": 55, "attack": 45, "defense": 50 },
+      "moves": ["tail-whirl", "leaf-twister"],
+      "areas": ["route"],
+      "rare": true
+    },
+    {
+      "id": "shiny-shadehog",
+      "name": "Shiny Shadehog",
+      "type": "fire",
+      "image": "shiny-shadehog.svg",
+      "baseStats": { "hp": 50, "attack": 60, "defense": 40 },
+      "moves": ["night-dash", "ember-skate"],
+      "areas": ["route"],
+      "rare": true
     }
   ]
 }

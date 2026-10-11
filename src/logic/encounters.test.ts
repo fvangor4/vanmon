@@ -61,6 +61,18 @@ describe('speciesForArea', () => {
     expect(creatures.species.find((s) => s.id === 'shiny-zoomhog')?.rare).toBe(true);
     expect(creatures.species.find((s) => s.id === 'xpeoon')?.rare).toBeUndefined();
   });
+
+  it('keeps Shiny Twintail and Shiny Shadehog on the route only, both rare', () => {
+    const creatures = validateCreatureData(shipped);
+    for (const id of ['shiny-twintail', 'shiny-shadehog']) {
+      for (const area of Object.keys(AREAS)) {
+        const ids = speciesForArea(creatures, area).map((s) => s.id);
+        if (area === 'route') expect(ids, id).toContain(id);
+        else expect(ids, `${id} in ${area}`).not.toContain(id);
+      }
+      expect(creatures.species.find((s) => s.id === id)?.rare, id).toBe(true);
+    }
+  });
 });
 
 describe('rollEncounter', () => {
