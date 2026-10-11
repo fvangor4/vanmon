@@ -111,7 +111,7 @@ export class MathScene extends Phaser.Scene {
     this.problemText.setText(`${p.a} + ${p.b} = ${p.answer}`);
     this.stars[this.index].setText('⭐');
     this.tweens.add({ targets: button, scale: 1.12, yoyo: true, duration: 180 });
-    speaker.say(`${CHEERS[this.index % CHEERS.length]} ${p.a} plus ${p.b} is ${p.answer}!`);
+    this.sayLine(`${CHEERS[this.index % CHEERS.length]} ${p.a} plus ${p.b} is ${p.answer}!`);
     await this.wait(2200);
     this.index++;
     if (this.index < this.quiz.length) {
