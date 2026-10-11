@@ -109,10 +109,11 @@ rigor:
       on empty returns nothing.
       files: src/logic/undo.ts, src/logic/undo.test.ts
       commits: [9d929e1, c16a594]
-- [~] 3. Drawing storage: save/load the latest `{type, png}` under
+- [x] 3. Drawing storage: save/load the latest `{type, png}` under
       `vanmon.drawing` through a `KeyValueStore`. It tolerates missing, corrupt,
       wrong-version and throwing stores, and has a clear() function.
       files: src/logic/drawingStore.ts, src/logic/drawingStore.test.ts
+      commits: [5f02e59, 48d36eb]
 - [ ] 4. DrawScene basics: a canvas you can draw on with a finger, 8 crayon colors,
       thin and thick brushes, eraser, and ❌ close back to the Overworld via `menuBase`.
       It restores and saves the drawing via task 3. Registered in `main.ts`.
@@ -143,3 +144,12 @@ rigor:
   - (4) Trigger not applicable here.
   Re-review pass.
 - task 3: implemented, 8 tests pass. Added a 1.5 MB size cap so a drawing can't use up the quota the saved game needs. An unknown type is dropped but the picture is kept.
+- task 3 review, spec findings:
+  - (1) Console warning on a failed write → the scene's job. Task 4 must `console.warn` when saveDrawing returns false.
+  - (2) Size cap is a new product decision → kept. It protects the saved game, and a crayon drawing is far under it. Tell the user at the end.
+  - (3) Unknown type keeps the picture → kept on purpose. Losing a kid's art over a type tag is worse than dropping the tag.
+- task 3 review, code findings:
+  - Fixed in 48d36eb: (1) save now validates the PNG like load does; (3) load-side cap test; (4) stored-shape test; (5) boundary test; (6) cap lowered to 1,000,000 chars, about 2 MB worst case under UTF-16.
+  - (2) A failed save leaves the older drawing in storage → accepted. An older picture beats a blank one, and the canvas on screen still has the new one.
+  - (7) Junk left in storage on a failed load → accepted. The first stroke overwrites it, and deleting a wrong-version entry would destroy a newer game's drawing.
+  - Re-review pass.
