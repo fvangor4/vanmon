@@ -39,12 +39,14 @@ describe('speciesForArea', () => {
     expect(speciesForArea(withPrize, 'pond').map((s) => s.id)).toEqual(['watery', 'anywhere']);
   });
 
-  it('keeps Super Shadehog out of the shipped grass, and every other creature still in it somewhere', () => {
+  it('keeps Super Shadehog (and any prize-only creature) out of the shipped grass, and every wild one in it somewhere', () => {
     const creatures = validateCreatureData(shipped);
     expect(creatures.species.find((s) => s.id === 'super-shadehog')?.wild).toBe(false);
     const inGrass = new Set(Object.keys(AREAS).flatMap((id) => speciesForArea(creatures, id).map((s) => s.id)));
-    expect(inGrass).not.toContain('super-shadehog');
-    for (const s of creatures.species) if (s.id !== 'super-shadehog') expect(inGrass, s.id).toContain(s.id);
+    for (const s of creatures.species) {
+      if (s.wild === false) expect(inGrass, s.id).not.toContain(s.id);
+      else expect(inGrass, s.id).toContain(s.id);
+    }
   });
 });
 
