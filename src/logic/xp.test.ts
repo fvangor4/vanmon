@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createCreature, statsAtLevel, type SpeciesDef } from './creatures';
-import { gainXp, LEVEL_CAP, xpForWin, xpToNextLevel } from './xp';
+import { gainXp, LEVEL_CAP, xpForWin, xpFraction, xpToNextLevel } from './xp';
 
 const species: SpeciesDef = {
   id: 'firey', name: 'Firey', type: 'fire', image: 'f.svg',
@@ -101,5 +101,23 @@ describe('gainXp', () => {
   it('refuses to apply another species\' stats', () => {
     const c = createCreature(species, 5);
     expect(() => gainXp(c, 10, { ...species, id: 'watery' })).toThrow(/watery/);
+  });
+});
+
+describe('xpFraction (how full the EXP bar is)', () => {
+  it('is the share of XP toward the next level', () => {
+    expect(xpFraction(5, 0)).toBe(0);
+    expect(xpFraction(5, 25)).toBe(0.5);
+    expect(xpFraction(1, 9)).toBeCloseTo(0.9);
+  });
+
+  it('is full at or past the level cap', () => {
+    expect(xpFraction(LEVEL_CAP, 0)).toBe(1);
+    expect(xpFraction(LEVEL_CAP + 3, 0)).toBe(1);
+  });
+
+  it('never spills past the ends for odd saved values', () => {
+    expect(xpFraction(5, 999)).toBe(1);
+    expect(xpFraction(5, -4)).toBe(0);
   });
 });

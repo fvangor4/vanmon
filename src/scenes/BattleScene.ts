@@ -9,6 +9,7 @@ import type { Creature, CreatureType } from '../logic/creatures';
 import { moveHint } from '../logic/damage';
 import { applyBattleOutcome, PARTY_MAX, type OutcomeResult } from '../logic/gameState';
 import { NPCS, type NpcDef } from '../logic/npcs';
+import { xpFraction } from '../logic/xp';
 import { creatureTexture, session } from '../session';
 import { BigButton, COLORS, FONT, type ButtonBadge } from '../ui/Button';
 import { DialogBox } from '../ui/DialogBox';
@@ -30,6 +31,7 @@ const CARD_W = 320;
 const CARD_PAD = 18;
 const NAME_FONT_MAX = 28;
 const NAME_FONT_MIN = 16;
+const XP_BAR = { x: 62, y: 84, w: 240, h: 10 };
 
 const hex = (color: number) => `#${color.toString(16).padStart(6, '0')}`;
 
@@ -42,18 +44,28 @@ class HpCard extends Phaser.GameObjects.Container {
   private bar: Phaser.GameObjects.Graphics;
   private label: Phaser.GameObjects.Text;
   private typeTag: Phaser.GameObjects.Text;
+  /** Only on the player's card. */
+  private xpBar?: Phaser.GameObjects.Graphics;
   private shown = 1;
 
-  constructor(scene: Phaser.Scene, x: number, y: number) {
+  constructor(scene: Phaser.Scene, x: number, y: number, withXp = false) {
     super(scene, x, y);
+    const h = withXp ? 108 : 90;
     const bg = scene.add.graphics();
-    bg.fillStyle(0x000000, 0.2).fillRoundedRect(0, 6, CARD_W, 90, 20);
-    bg.fillStyle(COLORS.panel, 1).fillRoundedRect(0, 0, CARD_W, 90, 20);
-    bg.lineStyle(4, COLORS.ink, 1).strokeRoundedRect(0, 0, CARD_W, 90, 20);
+    bg.fillStyle(0x000000, 0.2).fillRoundedRect(0, 6, CARD_W, h, 20);
+    bg.fillStyle(COLORS.panel, 1).fillRoundedRect(0, 0, CARD_W, h, 20);
+    bg.lineStyle(4, COLORS.ink, 1).strokeRoundedRect(0, 0, CARD_W, h, 20);
     this.label = scene.add.text(CARD_PAD, 28, '', { fontFamily: FONT, fontSize: `${NAME_FONT_MAX}px`, fontStyle: 'bold', color: '#1d2b3a' }).setOrigin(0, 0.5);
     this.typeTag = scene.add.text(CARD_W - CARD_PAD, 28, '', { fontFamily: FONT, fontSize: '20px', fontStyle: 'bold' }).setOrigin(1, 0.5);
     this.bar = scene.add.graphics();
     this.add([bg, this.label, this.typeTag, this.bar]);
+    if (withXp) {
+      const xpLabel = scene.add
+        .text(CARD_PAD, XP_BAR.y + XP_BAR.h / 2, 'EXP', { fontFamily: FONT, fontSize: '14px', fontStyle: 'bold', color: hex(COLORS.ink) })
+        .setOrigin(0, 0.5);
+      this.xpBar = scene.add.graphics();
+      this.add([xpLabel, this.xpBar]);
+    }
     scene.add.existing(this);
   }
 
@@ -66,6 +78,7 @@ class HpCard extends Phaser.GameObjects.Container {
     this.label.setFontSize(size).setScale(1);
     while (this.label.width > room && size > NAME_FONT_MIN) this.label.setFontSize(--size);
     if (this.label.width > room) this.label.setScale(room / this.label.width);
+    this.drawXp(xpFraction(c.level, c.xp));
     this.shown = c.hp / c.maxHp;
     this.drawBar(this.shown);
   }
@@ -82,6 +95,14 @@ class HpCard extends Phaser.GameObjects.Container {
         onComplete: () => resolve(),
       });
     });
+  }
+
+  private drawXp(fraction: number): void {
+    if (!this.xpBar) return;
+    const { x, y, w, h } = XP_BAR;
+    this.xpBar.clear();
+    this.xpBar.fillStyle(0xd9d9d9).fillRoundedRect(x, y, w, h, h / 2);
+    if (fraction > 0) this.xpBar.fillStyle(COLORS.water).fillRoundedRect(x, y, Math.max(h, w * fraction), h, h / 2);
   }
 
   private drawBar(fraction: number): void {
@@ -136,7 +157,7 @@ export class BattleScene extends Phaser.Scene {
       .setFlipX(true);
     this.wildCard = new HpCard(this, 60, 60);
     this.wildCard.show(s.speciesById(wild.speciesId), wild);
-    this.playerCard = new HpCard(this, 640, 400);
+    this.playerCard = new HpCard(this, 640, 400, true);
     this.playerCard.show(s.speciesById(active.speciesId), active);
     this.dialog = new DialogBox(this);
 

@@ -10,6 +10,12 @@ export function xpToNextLevel(level: number): number {
   return level * 10;
 }
 
+/** How full the EXP bar is, 0 to 1. Full at the level cap, where there's nothing left to earn. */
+export function xpFraction(level: number, xp: number): number {
+  if (level >= LEVEL_CAP) return 1;
+  return Math.min(1, Math.max(0, xp / xpToNextLevel(level)));
+}
+
 export function xpForWin(wildLevel: number): number {
   return 10 + wildLevel * 4;
 }
