@@ -51,6 +51,8 @@ const drawingStore = (): KeyValueStore => (store ??= browserStore());
 let restoring = false;
 /** Bumped to cancel a restore still loading (Clear wins over a late-arriving old drawing). */
 let restoreId = 0;
+/** Something changed (a type was picked) while restoring, so it must be kept once the load ends. */
+let changedWhileRestoring = false;
 /** The creature's type, if one was picked. Kept with the drawing. */
 let drawingType: CreatureType | null = null;
 /** How the drawing looked before each stroke or fill. Kept in memory with the texture, never stored. */
@@ -138,19 +140,29 @@ export class DrawScene extends MenuScene {
     if (!saved) return;
     drawingType = saved.type;
     restoring = true;
+    changedWhileRestoring = false;
     const id = ++restoreId;
     const img = new Image();
+    const finish = () => {
+      restoring = false;
+      if (changedWhileRestoring) this.keep();
+      changedWhileRestoring = false;
+    };
     img.onload = () => {
       if (id !== restoreId) return;
-      restoring = false;
       this.ctx.drawImage(img, 0, 0, SIZE, SIZE);
       this.texture.refresh();
-      this.keep(); // in case the type was changed while it loaded
+      finish();
     };
     img.onerror = () => {
       if (id !== restoreId) return;
-      restoring = false;
       console.warn('VanMon: the kept drawing could not be shown; starting with blank paper');
+      // Blank paper starts a new creature, unless the kid already picked a type for it.
+      if (!changedWhileRestoring) {
+        drawingType = null;
+        if (this.sys.isActive()) this.showType();
+      }
+      finish();
     };
     img.src = saved.png;
   }
@@ -255,7 +267,7 @@ export class DrawScene extends MenuScene {
       })
       .setOrigin(0.5);
     view.add(hint);
-    this.tweens.add({ targets: hint, alpha: 0, delay: HINT_MS, duration: 600 });
+    const fade = this.tweens.add({ targets: hint, alpha: 0, delay: HINT_MS, duration: 600 });
     speaker.say(SCREENSHOT_HINT);
 
     // Only a tap that starts here closes it (not the lift of the finger that tapped Done!).
@@ -264,6 +276,7 @@ export class DrawScene extends MenuScene {
     bg.on('pointerup', () => {
       if (!pressed) return;
       speaker.stop();
+      fade.remove();
       view.destroy();
     });
   }
@@ -295,6 +308,7 @@ export class DrawScene extends MenuScene {
     // A drawing still loading is cancelled, so it can't reappear over the blank paper.
     restoreId++;
     restoring = false;
+    changedWhileRestoring = false;
     this.stroke = null;
     this.ctx.fillStyle = PAPER;
     this.ctx.fillRect(0, 0, SIZE, SIZE);
@@ -366,7 +380,11 @@ export class DrawScene extends MenuScene {
 
   /** Saves the drawing on this iPad. A failure only costs the drawing after a restart. */
   private keep(): void {
-    if (restoring) return; // the canvas is still blank paper; don't store that over the drawing
+    if (restoring) {
+      // The canvas is still blank paper; don't store that over the drawing. Keep it once loaded.
+      changedWhileRestoring = true;
+      return;
+    }
     const png = this.texture.getCanvas().toDataURL('image/png');
     if (!saveDrawing(drawingStore(), { type: drawingType, png })) console.warn('VanMon: could not keep the drawing (too big, or storage full or blocked)');
   }
