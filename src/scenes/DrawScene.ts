@@ -3,12 +3,16 @@
 // The latest drawing is kept on this iPad (logic/drawingStore), apart from the saved game.
 
 import Phaser from 'phaser';
+import { GAME_HEIGHT, GAME_WIDTH } from '../config';
+import { TYPE_ICON } from '../logic/battleText';
+import { CREATURE_TYPES, type CreatureType } from '../logic/creatures';
 import { clearDrawing, loadDrawing, saveDrawing } from '../logic/drawingStore';
 import { floodFill } from '../logic/fill';
 import { browserStore, type KeyValueStore } from '../logic/save';
 import { UndoHistory } from '../logic/undo';
-import { BigButton, COLORS } from '../ui/Button';
+import { BigButton, COLORS, FONT } from '../ui/Button';
 import { HoldButton } from '../ui/HoldButton';
+import { speaker } from '../ui/speech';
 import { MenuScene } from './menuBase';
 
 /** Pixel size of the drawing (the same as creature art), whatever size it is shown at. */
@@ -29,6 +33,11 @@ const SWATCH = 68;
 /** How different a pixel can be and still get filled: enough to reach into soft crayon edges. */
 const FILL_TOLERANCE = 48;
 
+const HELP = 'Draw a new creature! Pick a color and draw with your finger. Tap fire, water or leaf to pick its type. Then tap Done.';
+const SCREENSHOT_HINT = 'Take a picture! Press the top button and the volume up button together.';
+/** How long the screenshot hint stays before fading, so it's gone from the picture. */
+const HINT_MS = 3500;
+
 type Tool = 'crayon' | 'eraser' | 'fill';
 
 let store: KeyValueStore | null = null;
@@ -42,6 +51,8 @@ const drawingStore = (): KeyValueStore => (store ??= browserStore());
 let restoring = false;
 /** Bumped to cancel a restore still loading (Clear wins over a late-arriving old drawing). */
 let restoreId = 0;
+/** The creature's type, if one was picked. Kept with the drawing. */
+let drawingType: CreatureType | null = null;
 /** How the drawing looked before each stroke or fill. Kept in memory with the texture, never stored. */
 const history = new UndoHistory<ImageData>();
 
@@ -58,6 +69,8 @@ export class DrawScene extends MenuScene {
   /** The texture changed since the last frame (uploaded once per frame, not per finger move). */
   private dirty = false;
   private undoButton!: BigButton;
+  private typeRing!: Phaser.GameObjects.Graphics;
+  private typeButtons!: Map<CreatureType, BigButton>;
   /** What the Undo button last showed, so it's only redrawn on a change (a redraw cancels a press). */
   private undoShown: boolean | null = null;
 
@@ -123,6 +136,7 @@ export class DrawScene extends MenuScene {
   private restore(): void {
     const saved = loadDrawing(drawingStore());
     if (!saved) return;
+    drawingType = saved.type;
     restoring = true;
     const id = ++restoreId;
     const img = new Image();
@@ -131,6 +145,7 @@ export class DrawScene extends MenuScene {
       restoring = false;
       this.ctx.drawImage(img, 0, 0, SIZE, SIZE);
       this.texture.refresh();
+      this.keep(); // in case the type was changed while it loaded
     };
     img.onerror = () => {
       if (id !== restoreId) return;
@@ -177,6 +192,80 @@ export class DrawScene extends MenuScene {
     this.updateUndo();
     // Clearing everything needs a long press, so a stray tap can't wipe a drawing.
     new HoldButton(this, (COLS[2] + COLS[3]) / 2, 440, { icon: '🗑️', label: 'Clear', color: COLORS.stop, width: COLS[3] - COLS[2] + SWATCH, height: SWATCH, onTap: () => this.clearAll() });
+
+    // Its type: tap to pick, tap again to unpick.
+    this.typeRing = this.add.graphics();
+    this.typeButtons = new Map();
+    CREATURE_TYPES.forEach((type, i) => {
+      const b = new BigButton(this, COLS[i], 525, {
+        icon: TYPE_ICON[type],
+        color: COLORS[type],
+        width: SWATCH,
+        height: SWATCH,
+        onTap: () => {
+          drawingType = drawingType === type ? null : type;
+          this.showType();
+          this.keep();
+        },
+      });
+      this.typeButtons.set(type, b);
+    });
+    this.showType();
+    new BigButton(this, COLS[3], 525, { icon: '🔊', color: COLORS.sky, width: SWATCH, height: SWATCH, onTap: () => speaker.say(HELP) });
+
+    new BigButton(this, (COLS[0] + COLS[3]) / 2, 640, { icon: '✅', label: 'Done!', color: COLORS.go, width: COLS[3] - COLS[0] + SWATCH, height: 104, onTap: () => this.showFinished() });
+  }
+
+  private showType(): void {
+    const b = drawingType && this.typeButtons.get(drawingType);
+    if (b) ring(this.typeRing, b);
+    else this.typeRing.clear();
+  }
+
+  /**
+   * The picture to screenshot: just the drawing and its type, as big as fits.
+   * A short spoken hint says how to take the screenshot, then fades away.
+   * Tap anywhere to go back to drawing.
+   */
+  private showFinished(): void {
+    if (this.stroke) {
+      this.stroke = null;
+      this.keep();
+    }
+    const view = this.add.container(0, 0).setDepth(1000);
+    const bg = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, COLORS.panel).setOrigin(0).setInteractive();
+    const big = GAME_HEIGHT - 48;
+    const x = drawingType ? 40 : (GAME_WIDTH - big) / 2;
+    const picture = this.add.image(x, 24, TEXTURE).setOrigin(0).setDisplaySize(big, big);
+    view.add([bg, picture]);
+    if (drawingType) {
+      const space = GAME_WIDTH - (x + big);
+      view.add(this.add.text(x + big + space / 2, GAME_HEIGHT / 2, TYPE_ICON[drawingType], { fontFamily: FONT, fontSize: '150px' }).setOrigin(0.5));
+    }
+    const hint = this.add
+      .text(GAME_WIDTH / 2, GAME_HEIGHT - 70, `📸 ${SCREENSHOT_HINT}`, {
+        fontFamily: FONT,
+        fontSize: '30px',
+        fontStyle: 'bold',
+        color: '#1d2b3a',
+        backgroundColor: '#ffc83d',
+        padding: { x: 20, y: 14 },
+        align: 'center',
+        wordWrap: { width: GAME_WIDTH - 120 },
+      })
+      .setOrigin(0.5);
+    view.add(hint);
+    this.tweens.add({ targets: hint, alpha: 0, delay: HINT_MS, duration: 600 });
+    speaker.say(SCREENSHOT_HINT);
+
+    // Only a tap that starts here closes it (not the lift of the finger that tapped Done!).
+    let pressed = false;
+    bg.on('pointerdown', () => (pressed = true));
+    bg.on('pointerup', () => {
+      if (!pressed) return;
+      speaker.stop();
+      view.destroy();
+    });
   }
 
   private updateUndo(): void {
@@ -211,6 +300,8 @@ export class DrawScene extends MenuScene {
     this.ctx.fillRect(0, 0, SIZE, SIZE);
     this.dirty = true;
     history.clear();
+    drawingType = null;
+    this.showType();
     this.updateUndo();
     if (!clearDrawing(drawingStore())) console.warn('VanMon: could not forget the kept drawing (storage blocked)');
   }
@@ -275,8 +366,9 @@ export class DrawScene extends MenuScene {
 
   /** Saves the drawing on this iPad. A failure only costs the drawing after a restart. */
   private keep(): void {
+    if (restoring) return; // the canvas is still blank paper; don't store that over the drawing
     const png = this.texture.getCanvas().toDataURL('image/png');
-    if (!saveDrawing(drawingStore(), { type: null, png })) console.warn('VanMon: could not keep the drawing (too big, or storage full or blocked)');
+    if (!saveDrawing(drawingStore(), { type: drawingType, png })) console.warn('VanMon: could not keep the drawing (too big, or storage full or blocked)');
   }
 }
 

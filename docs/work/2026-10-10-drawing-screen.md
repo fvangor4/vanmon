@@ -126,7 +126,7 @@ rigor:
       with `HoldButton` clears the canvas and the stored drawing.
       files: src/scenes/DrawScene.ts
       commits: [683d1af, 5ba8448]
-- [ ] 7. Type picker (🔥/💧/🍃, tap again to unset, stored), and the "Done!" clean
+- [~] 7. Type picker (🔥/💧/🍃, tap again to unset, stored), and the "Done!" clean
       view: only the drawing and type, with the spoken and fading screenshot hint. Tap
       anywhere to return. 🔊 on the drawing screen reads its instructions.
       files: src/scenes/DrawScene.ts
@@ -178,3 +178,7 @@ rigor:
   - code (1): setEnabled on every snapshot cancelled an Undo press → fixed: Undo only redraws on a change.
   - spec (2): no scene-level tests → accepted per the contract (no unit-test seam); covered by the browser check.
   - Re-review pass.
+- task 7: implemented. Type is kept in module state with the drawing and stored by `keep()`. Clear also resets the type. `keep()` is skipped while restoring, so blank paper never overwrites the stored drawing, and onload calls keep() to save a type picked during the load. Browser check:
+  - 💧 is stored as type "water", and 🔊 speaks HELP.
+  - Done! shows only the drawing plus 💧 and speaks the screenshot hint. The hint is gone after about 4 s, and a tap returns to the tools.
+  - After a reload, the drawing and the 💧 ring are restored. No console errors.
