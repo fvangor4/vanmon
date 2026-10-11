@@ -103,7 +103,7 @@ rigor:
       bounds or already that color.
       files: src/logic/fill.ts, src/logic/fill.test.ts
       commits: [f9f3002, 043e17c]
-- [ ] 2. Bounded undo history: push/undo, capped at 20 (oldest dropped). Undo
+- [~] 2. Bounded undo history: push/undo, capped at 20 (oldest dropped). Undo
       on empty returns nothing.
       files: src/logic/undo.ts, src/logic/undo.test.ts
 - [ ] 3. Drawing storage: save/load the latest `{type, png}` under
@@ -132,3 +132,4 @@ rigor:
 - 2026-10-10: approved by user ("Works for me"), with the proposed screenshot-hint and undo defaults.
 - task 1: implemented, 8 tests pass. Uses 4-way connections and a visited map so a near-matching fill color still finishes.
 - task 1 review: spec pass. Code review had 5 findings: (1) edge-wrap guard untested, (2) tolerance boundary untested, (3) fractional/out-of-range color broke the "already that color" check. All three fixed in 043e17c. (4) A regression that drops `visited` would hang rather than fail: accepted, since it's still caught. (5) Trigger not applicable to this task, as it covers the storage in task 3. Re-review pass.
+- task 2: implemented, 5 tests pass.
