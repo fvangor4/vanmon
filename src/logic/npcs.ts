@@ -10,9 +10,12 @@ export interface NpcDef {
   name: string;
   /** The creature it battles with, and the prize for beating it the first time. */
   speciesId: string;
-  /** Phaser texture key of its picture on the map (drawn in src/scenes/textures.ts). */
-  texture: string;
+  /** Its picture on the map. Every key must be drawn in src/scenes/textures.ts (the compiler checks). */
+  texture: NpcTexture;
 }
+
+/** NPC pictures that exist. */
+export type NpcTexture = 'gold-kid';
 
 export const GOLD_KID: NpcDef = { id: 'gold-kid', name: 'The Gold Kid', speciesId: 'super-shadehog', texture: 'gold-kid' };
 

@@ -2,7 +2,7 @@
 
 import Phaser from 'phaser';
 import type { TileKind } from '../logic/map';
-import { GOLD_KID } from '../logic/npcs';
+import { GOLD_KID, type NpcTexture } from '../logic/npcs';
 
 export const TILE = 64;
 
@@ -120,6 +120,11 @@ function drawGoldKid(g: Phaser.GameObjects.Graphics): void {
   g.fillStyle(0xfff3b0).fillTriangle(48, 10, 54, 8, 54, 12).fillTriangle(60, 10, 54, 8, 54, 12);
 }
 
+/** A drawing for every NPC picture: leaving one out is a type error. */
+const NPC_DRAW: Record<NpcTexture, (g: Phaser.GameObjects.Graphics) => void> = {
+  'gold-kid': drawGoldKid,
+};
+
 export function makeTextures(scene: Phaser.Scene): void {
   const g = scene.make.graphics({}, false);
   for (const [kind, draw] of Object.entries(DRAW)) {
@@ -134,10 +139,11 @@ export function makeTextures(scene: Phaser.Scene): void {
     drawKid(g, PLAYER_COLORS);
     g.generateTexture(PLAYER_TEXTURE, TILE, TILE);
   }
-  if (!scene.textures.exists(GOLD_KID_TEXTURE)) {
+  for (const [key, draw] of Object.entries(NPC_DRAW)) {
+    if (scene.textures.exists(key)) continue;
     g.clear();
-    drawGoldKid(g);
-    g.generateTexture(GOLD_KID_TEXTURE, TILE, TILE);
+    draw(g);
+    g.generateTexture(key, TILE, TILE);
   }
   g.destroy();
 }

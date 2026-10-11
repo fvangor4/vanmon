@@ -18,7 +18,7 @@ const firey = data.species[0];
 
 describe('NPCS', () => {
   it('has the Gold Kid with Super Shadehog, and every NPC creature exists in the shipped data', () => {
-    expect(GOLD_KID).toMatchObject({ id: 'gold-kid', name: 'The Gold Kid', speciesId: 'super-shadehog', texture: 'gold-kid' });
+    expect(GOLD_KID).toMatchObject({ id: 'gold-kid', name: 'The Gold Kid', speciesId: 'super-shadehog' });
     expect(NPCS[GOLD_KID.id]).toBe(GOLD_KID);
     const ids = new Set(validateCreatureData(shipped).species.map((s) => s.id));
     for (const npc of Object.values(NPCS)) expect(ids, npc.id).toContain(npc.speciesId);
