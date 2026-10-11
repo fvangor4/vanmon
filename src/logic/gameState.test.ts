@@ -211,3 +211,86 @@ describe('applyBattleOutcome', () => {
     }
   });
 });
+
+describe('applyBattleOutcome in a Gold Kid battle', () => {
+  const npcData: CreatureData = {
+    ...data,
+    species: [
+      ...data.species,
+      { id: 'super-shadehog', name: 'Super Shadehog', type: 'fire', image: 's.svg', baseStats: { hp: 55, attack: 65, defense: 45 }, moves: ['bump', 'spark'], wild: false },
+    ],
+  };
+  const hog = (level = 5, hp?: number) => {
+    const c = createCreature(npcData.species[2], level);
+    return hp === undefined ? c : { ...c, hp };
+  };
+  const away = { map: 'route', x: 5, y: 5 };
+  const npcBattle = (g: GameState, outcome: BattleState['outcome'], foe = hog(5, 0)): BattleState => ({
+    ...startBattle(g.party, { ...foe, hp: foe.maxHp }, { npcId: 'gold-kid' }),
+    wild: foe,
+    outcome,
+  });
+
+  it('first win: XP, plus a fresh Super Shadehog at the battle level, and the win is remembered', () => {
+    const g = { ...withParty([mon('firey')]), position: away };
+    const { state, prize } = applyBattleOutcome(g, npcBattle(g, 'won', hog(7, 0)), npcData);
+    expect(state.party[0].xp).toBe(xpForWin(7));
+    expect(state.party).toHaveLength(2);
+    expect(state.party[1]).toMatchObject({ speciesId: 'super-shadehog', level: 7, xp: 0 });
+    expect(state.party[1].hp).toBe(state.party[1].maxHp);
+    expect(state.party[1].uid).not.toBe(state.party[0].uid);
+    expect(prize).toEqual({ creature: state.party[1], where: 'party' });
+    expect(state.book['super-shadehog']).toBe('caught');
+    expect(state.npcsBeaten).toEqual(['gold-kid']);
+    expect(state.position).toEqual(away);
+  });
+
+  it('first win with a full party: the prize goes to the Box', () => {
+    const g = withParty(Array.from({ length: PARTY_MAX }, () => mon('firey')));
+    const { state, prize } = applyBattleOutcome(g, npcBattle(g, 'won'), npcData);
+    expect(state.party).toHaveLength(PARTY_MAX);
+    expect(state.box.map((c) => c.speciesId)).toEqual(['super-shadehog']);
+    expect(prize?.where).toBe('box');
+  });
+
+  it('a rematch win gives XP but never a second Super Shadehog', () => {
+    const g = { ...withParty([mon('firey')]), npcsBeaten: ['gold-kid'] };
+    const { state, prize } = applyBattleOutcome(g, npcBattle(g, 'won'), npcData);
+    expect(state.party[0].xp).toBe(xpForWin(5));
+    expect(state.party).toHaveLength(1);
+    expect(state.box).toEqual([]);
+    expect(prize).toBeUndefined();
+    expect(state.npcsBeaten).toEqual(['gold-kid']);
+  });
+
+  it('a loss heals everyone and leaves the player where they are (next to the Gold Kid)', () => {
+    const g = { ...withParty([mon('firey'), mon('watery', 5, 3)], [mon('watery', 2, 1)]), position: away };
+    const b = npcBattle(g, 'lost', hog(5));
+    b.party[0] = { ...b.party[0], hp: 0 };
+    const { state, prize } = applyBattleOutcome(g, b, npcData);
+    expect(state.position).toEqual(away);
+    for (const c of [...state.party, ...state.box]) expect(c.hp).toBe(c.maxHp);
+    expect(state.npcsBeaten).toEqual([]);
+    expect(prize).toBeUndefined();
+  });
+
+  it('a wild loss still sends the player home', () => {
+    const g = { ...withParty([mon('firey')]), position: away };
+    const b = { ...npcBattle(g, 'lost', hog(5)), npcId: undefined };
+    expect(applyBattleOutcome(g, b, npcData).state.position).toEqual(START);
+  });
+
+  it('running away changes nothing but the Book', () => {
+    const g = { ...withParty([mon('firey')]), position: away };
+    const { state, prize } = applyBattleOutcome(g, npcBattle(g, 'ran', hog(5)), npcData);
+    expect(state.position).toEqual(away);
+    expect(state.party).toHaveLength(1);
+    expect(state.npcsBeaten).toEqual([]);
+    expect(prize).toBeUndefined();
+  });
+
+  it('refuses a "caught" result from an NPC battle', () => {
+    const g = withParty([mon('firey')]);
+    expect(() => applyBattleOutcome(g, npcBattle(g, 'caught', hog(5)), npcData)).toThrow(/catch/);
+  });
+});

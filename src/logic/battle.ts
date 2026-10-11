@@ -2,6 +2,7 @@
 // a list of events for the battle scene to animate and read aloud.
 // The player always acts first; the wild creature picks a random move.
 // On 'caught', state.wild is the creature to add to the player's collection.
+// In an NPC battle (npcId set), "wild" is the NPC's creature and can't be caught.
 
 import type { Creature, CreatureData, MoveDef, SpeciesDef } from './creatures';
 import { rollCatch } from './catch';
@@ -18,6 +19,8 @@ export interface BattleState {
   activeIndex: number;
   wild: Creature;
   outcome: Outcome | null;
+  /** Set when battling an NPC's creature instead of a wild one. */
+  npcId?: string;
 }
 
 export type BattleAction =
@@ -65,7 +68,7 @@ export function makeBattleContext(data: CreatureData, rng: Rng): BattleContext {
   };
 }
 
-export function startBattle(party: Creature[], wild: Creature): BattleState {
+export function startBattle(party: Creature[], wild: Creature, opts: { npcId?: string } = {}): BattleState {
   if (wild.hp <= 0) throw new Error('cannot battle a wild creature that is already asleep');
   const activeIndex = party.findIndex((c) => c.hp > 0);
   if (activeIndex === -1) throw new Error('cannot battle: every party creature is asleep');
@@ -74,6 +77,7 @@ export function startBattle(party: Creature[], wild: Creature): BattleState {
     activeIndex,
     wild: { ...wild },
     outcome: null,
+    ...(opts.npcId === undefined ? {} : { npcId: opts.npcId }),
   };
 }
 
@@ -131,6 +135,7 @@ export function takeTurn(prev: BattleState, action: BattleAction, ctx: BattleCon
       break;
 
     case 'catch': {
+      if (state.npcId !== undefined) throw new Error("can't catch another trainer's creature");
       const roll = rollCatch(state.wild, ctx.rng);
       events.push({ kind: 'catch', ...roll });
       if (roll.caught) state.outcome = 'caught';

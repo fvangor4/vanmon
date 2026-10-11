@@ -163,6 +163,24 @@ describe('swap', () => {
   });
 });
 
+describe('NPC battles', () => {
+  it('remember which NPC is battling', () => {
+    expect(startBattle([mon('firey')], mon('leafy'), { npcId: 'gold-kid' }).npcId).toBe('gold-kid');
+    expect(startBattle([mon('firey')], mon('leafy')).npcId).toBeUndefined();
+  });
+
+  it("can't catch an NPC's creature, but can still run", () => {
+    const s = startBattle([mon('firey')], mon('leafy'), { npcId: 'gold-kid' });
+    expect(() => takeTurn(s, { kind: 'catch' }, makeBattleContext(data, seq(0, 0, 0)))).toThrow(/catch/);
+    expect(takeTurn(s, { kind: 'run' }, ctx()).state.outcome).toBe('ran');
+  });
+
+  it('keep the NPC id through turns', () => {
+    const s = startBattle([mon('firey')], mon('leafy'), { npcId: 'gold-kid' });
+    expect(takeTurn(s, { kind: 'fight', moveIndex: 0 }, ctx(0.5)).state.npcId).toBe('gold-kid');
+  });
+});
+
 describe('catch', () => {
   it('catches the wild creature after 3 wiggles and ends the battle', () => {
     const s = startBattle([mon('firey')], mon('watery'));
