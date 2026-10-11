@@ -19,6 +19,8 @@ export interface MathLaunch {
 const ANSWER_COLORS = [COLORS.sky, COLORS.fire, COLORS.leaf];
 const CHEERS = ['Yes!', 'You got it!', 'Super!'];
 
+const ALL_DONE = "You got them all! Now let's battle!";
+
 const question = (p: MathProblem) => `What is ${p.a} plus ${p.b}?`;
 
 export class MathScene extends Phaser.Scene {
@@ -58,7 +60,7 @@ export class MathScene extends Phaser.Scene {
       .text(GAME_WIDTH / 2, 70, `${npc.name}'s math!`, { fontFamily: FONT, fontSize: '48px', fontStyle: 'bold', color: '#1d2b3a' })
       .setOrigin(0.5);
     new BigButton(this, 80, 70, { icon: '✖️', color: COLORS.normal, width: 110, height: 90, onTap: () => this.leave() });
-    new BigButton(this, GAME_WIDTH - 80, 70, { icon: '🔊', color: COLORS.sky, width: 110, height: 90, onTap: () => speaker.say(question(this.quiz[this.index])) });
+    new BigButton(this, GAME_WIDTH - 80, 70, { icon: '🔊', color: COLORS.sky, width: 110, height: 90, onTap: () => speaker.say(this.nowSaying()) });
     this.stars = this.quiz.map((_, i) =>
       this.add.text(GAME_WIDTH / 2 + (i - 1) * 80, 150, '☆', { fontFamily: FONT, fontSize: '56px', color: '#b8860b' }).setOrigin(0.5),
     );
@@ -67,6 +69,12 @@ export class MathScene extends Phaser.Scene {
       .setOrigin(0.5);
     this.cameras.main.fadeIn(250);
     this.showProblem();
+  }
+
+  /** What 🔊 repeats: the current question, or the cheer once all three are done. */
+  private nowSaying(): string {
+    const p = this.quiz[this.index];
+    return p ? question(p) : ALL_DONE;
   }
 
   private showProblem(): void {
@@ -111,7 +119,7 @@ export class MathScene extends Phaser.Scene {
     this.answers.forEach((b) => b.destroy());
     this.answers = [];
     this.problemText.setText('🎉');
-    speaker.say("You got them all! Now let's battle!");
+    speaker.say(ALL_DONE);
     await this.wait(2200);
     this.startBattle();
   }
@@ -124,9 +132,12 @@ export class MathScene extends Phaser.Scene {
       this.cameras.main.fadeOut(300);
       this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.start('Battle', launch));
     } catch (err) {
-      // Never leave a child stuck here.
+      // A data bug (e.g. the NPC's creature missing from creatures.json): say so
+      // kindly and go back to town rather than leaving a child on this screen.
       console.error('VanMon math error', err);
-      this.leave();
+      this.problemText.setText('😅');
+      speaker.say("Oops! Let's head back.");
+      this.time.delayedCall(1800, () => this.leave());
     }
   }
 
