@@ -10,7 +10,6 @@ import { session } from '../session';
 import { BigButton, COLORS, FONT } from '../ui/Button';
 import { speaker } from '../ui/speech';
 import type { BattleLaunch } from './OverworldScene';
-import { GOLD_KID_TEXTURE } from './textures';
 
 export interface MathLaunch {
   npc: string;
@@ -57,7 +56,7 @@ export class MathScene extends Phaser.Scene {
     const npc = this.npc;
     const g = this.add.graphics();
     g.fillGradientStyle(0xfff6d5, 0xfff6d5, 0xffe08a, 0xffe08a).fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-    if (this.textures.exists(GOLD_KID_TEXTURE)) this.add.image(150, 300, GOLD_KID_TEXTURE).setScale(3);
+    this.add.image(150, 300, npc.texture).setScale(3);
     this.add
       .text(GAME_WIDTH / 2, 70, `${npc.name}'s math!`, { fontFamily: FONT, fontSize: '48px', fontStyle: 'bold', color: '#1d2b3a' })
       .setOrigin(0.5);
