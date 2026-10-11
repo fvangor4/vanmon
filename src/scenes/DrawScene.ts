@@ -3,9 +3,12 @@
 // The latest drawing is kept on this iPad (logic/drawingStore), apart from the saved game.
 
 import Phaser from 'phaser';
-import { loadDrawing, saveDrawing } from '../logic/drawingStore';
+import { clearDrawing, loadDrawing, saveDrawing } from '../logic/drawingStore';
+import { floodFill } from '../logic/fill';
 import { browserStore, type KeyValueStore } from '../logic/save';
+import { UndoHistory } from '../logic/undo';
 import { BigButton, COLORS } from '../ui/Button';
+import { HoldButton } from '../ui/HoldButton';
 import { MenuScene } from './menuBase';
 
 /** Pixel size of the drawing (the same as creature art), whatever size it is shown at. */
@@ -23,8 +26,10 @@ const BRUSH = { thin: 10, thick: 28 } as const;
 /** Centers of the four tool columns on the right. */
 const COLS = [700, 780, 860, 940];
 const SWATCH = 68;
+/** How different a pixel can be and still get filled: enough to reach into soft crayon edges. */
+const FILL_TOLERANCE = 48;
 
-type Tool = 'crayon' | 'eraser';
+type Tool = 'crayon' | 'eraser' | 'fill';
 
 let store: KeyValueStore | null = null;
 /** One store for every visit, so a blocked-storage fallback still remembers within a session. */
@@ -35,6 +40,8 @@ const drawingStore = (): KeyValueStore => (store ??= browserStore());
  * close and reopen during the load.
  */
 let restoring = false;
+/** How the drawing looked before each stroke or fill. Kept in memory with the texture, never stored. */
+const history = new UndoHistory<ImageData>();
 
 const css = (color: number) => `#${color.toString(16).padStart(6, '0')}`;
 
@@ -48,6 +55,7 @@ export class DrawScene extends MenuScene {
   private stroke: { pointerId: number; x: number; y: number } | null = null;
   /** The texture changed since the last frame (uploaded once per frame, not per finger move). */
   private dirty = false;
+  private undoButton!: BigButton;
 
   constructor() {
     super('Draw');
@@ -135,9 +143,12 @@ export class DrawScene extends MenuScene {
         height: SWATCH,
         onTap: () => {
           this.color = color;
-          this.tool = 'crayon';
           ring(colorRing, b);
-          ring(toolRing, crayon);
+          // A color means drawing again after erasing; the fill bucket stays, to fill with the new color.
+          if (this.tool === 'eraser') {
+            this.tool = 'crayon';
+            ring(toolRing, crayon);
+          }
         },
       });
       if (i === 0) ring(colorRing, b);
@@ -151,7 +162,55 @@ export class DrawScene extends MenuScene {
     const toolRing = this.add.graphics();
     const crayon = new BigButton(this, COLS[2], 355, { icon: '🖍️', color: COLORS.sunny, width: SWATCH, height: SWATCH, onTap: () => { this.tool = 'crayon'; ring(toolRing, crayon); } });
     const eraser = new BigButton(this, COLS[3], 355, { icon: '🧽', color: COLORS.sky, width: SWATCH, height: SWATCH, onTap: () => { this.tool = 'eraser'; ring(toolRing, eraser); } });
+    const bucket = new BigButton(this, COLS[0], 440, { icon: '🪣', color: COLORS.sunny, width: SWATCH, height: SWATCH, onTap: () => { this.tool = 'fill'; ring(toolRing, bucket); } });
     ring(toolRing, crayon);
+
+    this.undoButton = new BigButton(this, COLS[1], 440, { icon: '↩️', color: COLORS.sky, width: SWATCH, height: SWATCH, onTap: () => this.undo() });
+    this.updateUndo();
+    // Clearing everything needs a long press, so a stray tap can't wipe a drawing.
+    new HoldButton(this, (COLS[2] + COLS[3]) / 2, 440, { icon: '🗑️', label: 'Clear', color: COLORS.stop, width: COLS[3] - COLS[2] + SWATCH, height: SWATCH, onTap: () => this.clearAll() });
+  }
+
+  private updateUndo(): void {
+    this.undoButton.setEnabled(history.canUndo);
+  }
+
+  /** Remembers how the drawing looks now, so Undo can come back to it. */
+  private snapshot(): void {
+    history.push(this.ctx.getImageData(0, 0, SIZE, SIZE));
+    this.updateUndo();
+  }
+
+  private undo(): void {
+    if (this.stroke || restoring) return;
+    const before = history.undo();
+    this.updateUndo();
+    if (!before) return;
+    this.ctx.putImageData(before, 0, 0);
+    this.dirty = true;
+    this.keep();
+  }
+
+  /** Blank paper, on screen and on this iPad. Undo can't bring it back. */
+  private clearAll(): void {
+    if (restoring) return;
+    this.stroke = null;
+    this.ctx.fillStyle = PAPER;
+    this.ctx.fillRect(0, 0, SIZE, SIZE);
+    this.dirty = true;
+    history.clear();
+    this.updateUndo();
+    if (!clearDrawing(drawingStore())) console.warn('VanMon: could not forget the kept drawing (storage blocked)');
+  }
+
+  private fill(x: number, y: number): void {
+    const image = this.ctx.getImageData(0, 0, SIZE, SIZE);
+    const c = this.color;
+    if (!floodFill(image.data, SIZE, SIZE, x, y, [(c >> 16) & 0xff, (c >> 8) & 0xff, c & 0xff, 255], FILL_TOLERANCE)) return;
+    this.snapshot();
+    this.ctx.putImageData(image, 0, 0);
+    this.dirty = true;
+    this.keep();
   }
 
   /** Converts a screen position to drawing pixels. */
@@ -166,6 +225,11 @@ export class DrawScene extends MenuScene {
   private startStroke(p: Phaser.Input.Pointer): void {
     if (this.stroke || restoring) return; // one finger draws at a time
     const { x, y } = this.toCanvas(p);
+    if (this.tool === 'fill') {
+      this.fill(x, y);
+      return;
+    }
+    this.snapshot();
     this.stroke = { pointerId: p.id, x, y };
     this.ctx.fillStyle = this.paintColor();
     this.ctx.beginPath();

@@ -122,7 +122,7 @@ rigor:
 - [x] 5. 🎨 HUD button opens DrawScene with the same guards as 🎒/📖.
       files: src/scenes/OverworldScene.ts
       commits: [3c734f9]
-- [ ] 6. Fill bucket and Undo in DrawScene (using tasks 1 and 2). Hold-to-clear
+- [~] 6. Fill bucket and Undo in DrawScene (using tasks 1 and 2). Hold-to-clear
       with `HoldButton` clears the canvas and the stored drawing.
       files: src/scenes/DrawScene.ts
 - [ ] 7. Type picker (🔥/💧/🍃, tap again to unset, stored), and the "Done!" clean
@@ -167,3 +167,8 @@ rigor:
 - task 5 review: code pass. Spec findings:
   - (1) The mid-step and battle paths were untested → browser check: tapping 🎨 mid-walk queues `pendingMenu='Draw'` and opens it after the step. Battles replace the Overworld scene, so there's no HUD in battle.
   - (2) 📦 Box moves one slot left in Home Town → kept. With 🎨 third, 🎒/📖/🎨 sit in the same spot on every map and only the home-only Box is added at the end. Putting 🎨 last would make 🎨 jump between maps. Mention to the user.
+- task 6: implemented. The undo history lives at module level next to the texture, so it survives close and reopen. Fill tolerance is 48. Picking a color switches from the eraser back to the crayon but keeps the fill bucket. Browser check:
+  - A short tap on Clear changes nothing.
+  - A 2 s hold blanks the canvas, removes `vanmon.drawing` and disables Undo.
+  - Drew a closed box, red fill inside: 59,415 red pixels, outside untouched.
+  - Undo removed the fill: 0 red pixels, box intact.
