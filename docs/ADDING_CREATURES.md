@@ -42,7 +42,7 @@ First time only: install the tools with `npm install`.
 
 Add an entry at the **end** of the `"species"` list. (The three starters are the
 first fire, water and leaf creatures in the list, so a new creature put higher up
-would replace a starter.)
+would replace a starter. Creatures with `"wild": false` are never starters.)
 
 ```json
 {
@@ -65,6 +65,7 @@ would replace a starter.)
 | `baseStats` | Whole numbers. Around 40–65 keeps things fair; higher is stronger. |
 | `moves` | Exactly two: one **normal** move and one move of the creature's own type. |
 | `areas` | `"route"`, `"pond"`, or both. Leave the line out to have it appear everywhere. |
+| `wild` | Optional. `false` means it never appears in the tall grass (like Super Shadehog, the Gold Kid's prize). Leave out `areas` when you use it. |
 
 Moves you can use today:
 
