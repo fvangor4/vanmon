@@ -6,10 +6,11 @@ import { GAME_HEIGHT, GAME_WIDTH } from '../config';
 import { makeBattleContext, startBattle, takeTurn, type BattleAction, type BattleEvent, type BattleState } from '../logic/battle';
 import { battleText, boxText, levelUpText, npcIntroText, prizeText, TYPE_ICON, typeLabel, type BattleNames } from '../logic/battleText';
 import type { Creature, CreatureType } from '../logic/creatures';
+import { moveHint } from '../logic/damage';
 import { applyBattleOutcome, PARTY_MAX, type OutcomeResult } from '../logic/gameState';
 import { NPCS, type NpcDef } from '../logic/npcs';
 import { creatureTexture, session } from '../session';
-import { BigButton, COLORS, FONT } from '../ui/Button';
+import { BigButton, COLORS, FONT, type ButtonBadge } from '../ui/Button';
 import { DialogBox } from '../ui/DialogBox';
 import type { BattleLaunch } from './OverworldScene';
 
@@ -31,6 +32,11 @@ const NAME_FONT_MAX = 28;
 const NAME_FONT_MIN = 16;
 
 const hex = (color: number) => `#${color.toString(16).padStart(6, '0')}`;
+
+const HINT_BADGE: Record<'super' | 'weak', ButtonBadge> = {
+  super: { text: 'Super!', fill: COLORS.sunny, color: hex(COLORS.ink) },
+  weak: { text: 'Weak', fill: 0x6b6b6b, color: '#e6e6e6' },
+};
 
 class HpCard extends Phaser.GameObjects.Container {
   private bar: Phaser.GameObjects.Graphics;
@@ -196,18 +202,20 @@ export class BattleScene extends Phaser.Scene {
     const s = session();
     const active = this.battle.party[this.battle.activeIndex];
     const moves = s.speciesById(active.speciesId).moves.map((id) => s.data.moves.find((m) => m.id === id)!);
+    const foeType = s.speciesById(this.battle.wild.speciesId).type;
     const y1 = GAME_HEIGHT - 175;
-    this.menu = moves.map(
-      (m, i) =>
-        new BigButton(this, 270 + i * 484, y1, {
-          icon: TYPE_ICON[m.type],
-          label: m.name,
-          color: COLORS[m.type],
-          width: 420,
-          height: 92,
-          onTap: () => void this.act({ kind: 'fight', moveIndex: i }),
-        }),
-    );
+    this.menu = moves.map((m, i) => {
+      const hint = moveHint(m.type, foeType);
+      return new BigButton(this, 270 + i * 484, y1, {
+        icon: TYPE_ICON[m.type],
+        label: m.name,
+        color: COLORS[m.type],
+        width: 420,
+        height: 92,
+        badge: hint ? HINT_BADGE[hint] : undefined,
+        onTap: () => void this.act({ kind: 'fight', moveIndex: i }),
+      });
+    });
     this.menu.push(new BigButton(this, 270, GAME_HEIGHT - 70, { icon: '⬅️', label: 'Back', color: COLORS.normal, width: 420, height: 92, onTap: () => this.showMainMenu() }));
   }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calcDamage, effectiveness, type DamageInput } from './damage';
+import { calcDamage, effectiveness, moveHint, type DamageInput } from './damage';
 
 const fixed = (n: number) => () => n;
 
@@ -30,6 +30,22 @@ describe('effectiveness (fire > leaf > water > fire)', () => {
     expect(effectiveness('fire', 'fire')).toBe('normal');
     expect(effectiveness('normal', 'water')).toBe('normal');
     expect(effectiveness('normal', 'leaf')).toBe('normal');
+  });
+});
+
+describe('moveHint (the badge on a move button)', () => {
+  it('flags every move type against every creature type, and stays quiet when neutral', () => {
+    const expected = {
+      fire: { fire: null, water: 'weak', leaf: 'super' },
+      water: { fire: 'super', water: null, leaf: 'weak' },
+      leaf: { fire: 'weak', water: 'super', leaf: null },
+      normal: { fire: null, water: null, leaf: null },
+    } as const;
+    for (const [moveType, row] of Object.entries(expected)) {
+      for (const [defenderType, hint] of Object.entries(row)) {
+        expect(moveHint(moveType as keyof typeof expected, defenderType as keyof typeof row), `${moveType} vs ${defenderType}`).toBe(hint);
+      }
+    }
   });
 });
 

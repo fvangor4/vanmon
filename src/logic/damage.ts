@@ -25,6 +25,12 @@ export function effectiveness(moveType: MoveType, defenderType: CreatureType): E
   return 'normal';
 }
 
+/** What a move button should flag against this opponent: null when it's a plain matchup. */
+export function moveHint(moveType: MoveType, defenderType: CreatureType): 'super' | 'weak' | null {
+  const eff = effectiveness(moveType, defenderType);
+  return eff === 'normal' ? null : eff;
+}
+
 export interface DamageInput {
   attacker: { level: number; attack: number };
   defender: { defense: number; type: CreatureType };

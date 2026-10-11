@@ -18,12 +18,22 @@ export const COLORS = {
   ink: 0x1d2b3a,
 } as const;
 
+export interface ButtonBadge {
+  text: string;
+  /** Pill fill color. */
+  fill: number;
+  /** Text color, e.g. '#1d2b3a'. */
+  color: string;
+}
+
 export interface ButtonOptions {
   icon: string;
   label?: string;
   color: number;
   width?: number;
   height?: number;
+  /** A small tag on the button's top-right corner, e.g. "Super!". */
+  badge?: ButtonBadge;
   onTap: () => void;
 }
 
@@ -64,6 +74,7 @@ export class BigButton extends Phaser.GameObjects.Container {
         .setOrigin(0, 0.5);
       this.face.add(label);
     }
+    if (opts.badge) this.face.add(this.makeBadge(scene, opts.badge));
     this.add(this.face);
 
     this.setSize(this.bw, this.bh);
@@ -92,6 +103,19 @@ export class BigButton extends Phaser.GameObjects.Container {
     this.show(false);
     this.setAlpha(enabled ? 1 : 0.4);
     return this;
+  }
+
+  private makeBadge(scene: Phaser.Scene, badge: ButtonBadge): Phaser.GameObjects.Container {
+    const text = scene.add
+      .text(0, 0, badge.text, { fontFamily: FONT, fontSize: `${Math.round(this.bh * 0.24)}px`, fontStyle: 'bold', color: badge.color })
+      .setOrigin(0.5);
+    const w = text.width + 24;
+    const h = text.height + 8;
+    const pill = scene.add.graphics();
+    pill.fillStyle(badge.fill, 1).fillRoundedRect(-w / 2, -h / 2, w, h, h / 2);
+    pill.lineStyle(3, 0xffffff, 1).strokeRoundedRect(-w / 2, -h / 2, w, h, h / 2);
+    // Straddles the top edge so it never covers the move's name.
+    return scene.add.container(this.bw / 2 - w / 2 - 16, -this.bh / 2, [pill, text]);
   }
 
   private show(down: boolean): void {
