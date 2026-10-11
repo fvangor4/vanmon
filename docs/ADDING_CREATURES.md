@@ -6,9 +6,12 @@ picture in `public/creatures/`. Adding a new one needs no code.
 ## The easy way: ask Claude
 
 1. Your child draws a creature, either:
-   - **in the game:** tap 🎨, draw, pick a type, tap **✅ Done!**, and take an iPad
-     screenshot (top button + volume up). The screenshot is in Photos, ready to send
-     to you. Only the type comes with it, so ask for the name and where it lives; or
+   - **in the game:** tap 🎨, draw, optionally pick a type, and tap **✅ Done!**.
+     Wait a few seconds for the yellow hint to fade, then take an iPad screenshot
+     (top button + volume up; on an iPad with a Home button, top button + Home).
+     The screenshot is in Photos, ready to send to you. The type shows as 🔥, 💧
+     or 🍃 beside the drawing if one was picked; ask for anything else (name, where
+     it lives, and the type if none shows); or
    - **on paper** (bold markers on white paper work best). Take a photo of it,
      straight on, in good light.
 2. Give Claude the screenshot or photo and a few details:
