@@ -65,6 +65,9 @@ describe('battle text against an NPC', () => {
   it('cheers a win over the NPC, and on a loss says to try again instead of going home', () => {
     expect(battleText({ kind: 'won' }, vsGold)).toBe('You beat the Gold Kid! 🎉');
     expect(battleText({ kind: 'lost' }, vsGold)).toBe('Time for a nap! 💤 Good try! Talk to the Gold Kid to try again.');
+    // only a leading "The " is lowered mid-sentence; other names are left alone
+    expect(battleText({ kind: 'won' }, { ...vsGold, npc: 'Goldie' })).toBe('You beat Goldie! 🎉');
+    expect(battleText({ kind: 'won' }, { ...vsGold, npc: 'Theo The Brave' })).toBe('You beat Theo The Brave! 🎉');
     expect(battleText({ kind: 'lost' }, names)).toBe("Time for a nap! 💤 Let's go home and rest.");
   });
 

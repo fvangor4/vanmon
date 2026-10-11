@@ -80,18 +80,27 @@ export class BattleScene extends Phaser.Scene {
   private menu: Phaser.GameObjects.GameObject[] = [];
   /** The NPC being battled, or undefined in a wild battle. */
   private npc?: NpcDef;
+  /** An NPC id the launch named that doesn't exist (a bug): the battle is skipped. */
+  private unknownNpc?: string;
 
   constructor() {
     super('Battle');
   }
 
   init(data: BattleLaunch): void {
-    this.npc = data.npc !== undefined && Object.hasOwn(NPCS, data.npc) ? NPCS[data.npc] : undefined;
+    this.unknownNpc = data.npc !== undefined && !Object.hasOwn(NPCS, data.npc) ? data.npc : undefined;
+    this.npc = data.npc !== undefined && !this.unknownNpc ? NPCS[data.npc] : undefined;
     this.battle = startBattle(session().state.party, data.wild, this.npc ? { npcId: this.npc.id } : {});
     this.menu = [];
   }
 
   create(): void {
+    if (this.unknownNpc !== undefined) {
+      // A launch bug, not a wild battle: don't let an NPC's creature be caught by mistake.
+      console.error(`VanMon: battle launched for unknown NPC "${this.unknownNpc}"`);
+      this.scene.start('Overworld');
+      return;
+    }
     this.drawBackground();
     this.makeBallTexture();
     const s = session();
