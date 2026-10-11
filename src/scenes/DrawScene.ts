@@ -29,6 +29,12 @@ type Tool = 'crayon' | 'eraser';
 let store: KeyValueStore | null = null;
 /** One store for every visit, so a blocked-storage fallback still remembers within a session. */
 const drawingStore = (): KeyValueStore => (store ??= browserStore());
+/**
+ * True while the stored drawing is still loading into the texture. Drawing waits so
+ * it isn't painted over. It belongs to the texture, not one visit, so it survives a
+ * close and reopen during the load.
+ */
+let restoring = false;
 
 const css = (color: number) => `#${color.toString(16).padStart(6, '0')}`;
 
@@ -40,8 +46,8 @@ export class DrawScene extends MenuScene {
   private tool: Tool = 'crayon';
   /** The finger currently drawing, and where it last was (in drawing pixels). */
   private stroke: { pointerId: number; x: number; y: number } | null = null;
-  /** True while a stored drawing is still loading; drawing waits so it isn't painted over. */
-  private restoring = false;
+  /** The texture changed since the last frame (uploaded once per frame, not per finger move). */
+  private dirty = false;
 
   constructor() {
     super('Draw');
@@ -52,7 +58,7 @@ export class DrawScene extends MenuScene {
     this.size = BRUSH.thick;
     this.tool = 'crayon';
     this.stroke = null;
-    this.restoring = false;
+    this.dirty = false;
     this.frame('🎨 Draw a Creature');
     this.setUpCanvas();
     this.drawTools();
@@ -79,9 +85,20 @@ export class DrawScene extends MenuScene {
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => this.continueStroke(p));
     this.input.on('pointerup', (p: Phaser.Input.Pointer) => this.endStroke(p));
     this.input.on('pointerupoutside', (p: Phaser.Input.Pointer) => this.endStroke(p));
+    // Closing mid-stroke (another finger on ❌) still keeps what was drawn.
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.input.off('pointermove').off('pointerup').off('pointerupoutside');
+      if (this.dirty) this.texture.refresh();
+      if (this.stroke) {
+        this.stroke = null;
+        this.keep();
+      }
     });
+  }
+
+  update(): void {
+    if (!this.dirty) return;
+    this.dirty = false;
+    this.texture.refresh();
   }
 
   private fillPaper(): void {
@@ -94,17 +111,17 @@ export class DrawScene extends MenuScene {
   private restore(): void {
     const saved = loadDrawing(drawingStore());
     if (!saved) return;
-    this.restoring = true;
+    restoring = true;
     const img = new Image();
-    const done = () => {
-      this.restoring = false;
-    };
     img.onload = () => {
+      restoring = false;
       this.ctx.drawImage(img, 0, 0, SIZE, SIZE);
       this.texture.refresh();
-      done();
     };
-    img.onerror = done;
+    img.onerror = () => {
+      restoring = false;
+      console.warn('VanMon: the kept drawing could not be shown; starting with blank paper');
+    };
     img.src = saved.png;
   }
 
@@ -147,14 +164,14 @@ export class DrawScene extends MenuScene {
   }
 
   private startStroke(p: Phaser.Input.Pointer): void {
-    if (this.stroke || this.restoring) return; // one finger draws at a time
+    if (this.stroke || restoring) return; // one finger draws at a time
     const { x, y } = this.toCanvas(p);
     this.stroke = { pointerId: p.id, x, y };
     this.ctx.fillStyle = this.paintColor();
     this.ctx.beginPath();
     this.ctx.arc(x, y, this.size / 2, 0, Math.PI * 2);
     this.ctx.fill();
-    this.texture.refresh();
+    this.dirty = true;
   }
 
   private continueStroke(p: Phaser.Input.Pointer): void {
@@ -171,7 +188,7 @@ export class DrawScene extends MenuScene {
     ctx.stroke();
     this.stroke.x = x;
     this.stroke.y = y;
-    this.texture.refresh();
+    this.dirty = true;
   }
 
   private endStroke(p: Phaser.Input.Pointer): void {
