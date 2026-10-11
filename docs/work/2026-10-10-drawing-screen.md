@@ -131,7 +131,7 @@ rigor:
       anywhere to return. 🔊 on the drawing screen reads its instructions.
       files: src/scenes/DrawScene.ts
       commits: [808e180, 8ce575e]
-- [ ] 8. Docs: a 🎨 line in README "How to play". ADDING_CREATURES gets a
+- [~] 8. Docs: a 🎨 line in README "How to play". ADDING_CREATURES gets a
       "from an in-game drawing (screenshot)" route.
       files: README.md, docs/ADDING_CREATURES.md
 
@@ -191,3 +191,4 @@ rigor:
   - Accepted: hint wording ("...and the volume up button together") is the same meaning, clearer read aloud. A two-finger hold on Clear finishing under the Done! overlay is rare and harmless (it just clears).
   - No scene tests, per the contract. Re-review pass.
 - Browser-test artifact: with the pane hidden and no frames between two synthetic clicks, a click meant for the overlay reached the canvas. This doesn't happen on a real device, where frames run between taps.
+- task 8: implemented. README adds a 🎨 line. ADDING_CREATURES step 1 now offers the in-game drawing with a screenshot, or paper. The pre-existing uncommitted change to docs/work/done/2026-10-09-creature-game-mvp.md is the user's and is left unstaged.

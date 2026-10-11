@@ -5,14 +5,18 @@ picture in `public/creatures/`. Adding a new one needs no code.
 
 ## The easy way: ask Claude
 
-1. Your child draws a creature on paper (bold markers on white paper work best).
-2. Take a photo of it, straight on, in good light.
-3. Give Claude the photo and a few details:
+1. Your child draws a creature, either:
+   - **in the game:** tap 🎨, draw, pick a type, tap **✅ Done!**, and take an iPad
+     screenshot (top button + volume up). The screenshot is in Photos, ready to send
+     to you. Only the type comes with it, so ask for the name and where it lives; or
+   - **on paper** (bold markers on white paper work best). Take a photo of it,
+     straight on, in good light.
+2. Give Claude the screenshot or photo and a few details:
    - **Name** (for example, "Sparkle Kitty")
    - **Type:** 🔥 fire, 💧 water, or 🍃 leaf
    - **Where it lives:** the Grassy Route, Sparkle Pond, or both
    - Optional: is it strong, tough, or speedy? Any move names your child made up?
-4. Claude cleans up the drawing into a game picture, adds it to the game, runs
+3. Claude cleans up the drawing into a game picture, adds it to the game, runs
    the checks, and publishes it.
 
 ## Doing it by hand

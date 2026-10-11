@@ -29,6 +29,9 @@ title screen until the bar fills up. The old game is kept in a backup.
 - **Getting tired:** if your creature gets sleepy, everyone goes home for a nap. Nothing is lost.
 - **Home:** step on your front door to heal everyone. The 📦 Box button (in Home Town) lets you change who is on your team.
 - **🎒 Team** picks who goes first. **📖 Book** shows every creature you've met.
+- **🎨 Draw** a new creature with your finger. Tap 🔥, 💧 or 🍃 to pick its type, then
+  **✅ Done!** and take a screenshot (top button + volume up) to send to a grown-up.
+  Your latest drawing stays until you hold **🗑️ Clear**.
 
 ## Adding the kids' own creatures
 
