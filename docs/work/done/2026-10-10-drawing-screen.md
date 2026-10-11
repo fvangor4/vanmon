@@ -1,5 +1,5 @@
 ---
-status: approved
+status: done
 base: 6c6cdfb
 rigor:
   tests: tdd
@@ -131,9 +131,10 @@ rigor:
       anywhere to return. 🔊 on the drawing screen reads its instructions.
       files: src/scenes/DrawScene.ts
       commits: [808e180, 8ce575e]
-- [~] 8. Docs: a 🎨 line in README "How to play". ADDING_CREATURES gets a
+- [x] 8. Docs: a 🎨 line in README "How to play". ADDING_CREATURES gets a
       "from an in-game drawing (screenshot)" route.
       files: README.md, docs/ADDING_CREATURES.md
+      commits: [6c9f62e, 73ac322]
 
 ## Log
 - 2026-10-10: work file created (draft).
@@ -192,3 +193,5 @@ rigor:
   - No scene tests, per the contract. Re-review pass.
 - Browser-test artifact: with the pane hidden and no frames between two synthetic clicks, a click meant for the overlay reached the canvas. This doesn't happen on a real device, where frames run between taps.
 - task 8: implemented. README adds a 🎨 line. ADDING_CREATURES step 1 now offers the in-game drawing with a screenshot, or paper. The pre-existing uncommitted change to docs/work/done/2026-10-09-creature-game-mvp.md is the user's and is left unstaged.
+- task 8 review: fixed in 73ac322. Docs now say to wait for the hint, give the Home-button screenshot combo, mark the type as optional, and say to tap to go back. Re-review pass, with one note: the in-game hint only names top + volume up, which is wrong on Home-button iPads. Ask the user which iPads the kids have.
+- ship gate: `npm run build` passed (tsc, 19 test files / 230 tests, vite build, check-dist ok). The whole diff 6c6cdfb..HEAD touches only the files named in the tasks, and save.ts and the save format are untouched. Status done. Not pushed: pushing to main deploys to the kids' iPads, so that's the user's call.
