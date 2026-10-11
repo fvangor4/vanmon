@@ -20,7 +20,7 @@ const MAX_BACKUPS = 5;
  * into version n+1.
  */
 export type Migrations = Record<number, (state: unknown) => unknown>;
-const MIGRATIONS: Migrations = {
+export const MIGRATIONS: Migrations = {
   // 1 → 2: NPCs arrived (the Gold Kid). Nobody has beaten one yet.
   1: (state) => (isRecord(state) ? { ...state, npcsBeaten: [] } : state),
 };

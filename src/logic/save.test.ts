@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createCreature, statsAtLevel, type Creature, type CreatureData } from './creatures';
 import { newGame, type GameState } from './gameState';
-import { BACKUP_KEY, backupCurrentSave, browserStore, loadGame, readBackups, requestPersistentStorage, SAVE_KEY, SAVE_VERSION, saveGame, type KeyValueStore } from './save';
+import { BACKUP_KEY, backupCurrentSave, browserStore, loadGame, MIGRATIONS, readBackups, requestPersistentStorage, SAVE_KEY, SAVE_VERSION, saveGame, type KeyValueStore } from './save';
 import { PARTY_MAX } from './gameState';
 import { MAPS, START } from '../data/maps';
 import { LEVEL_CAP, xpToNextLevel } from './xp';
@@ -108,6 +108,14 @@ describe('damaged saves start fresh and keep the bad data in a backup', () => {
     const v1 = { party: g.party, box: g.box, book: g.book, position: { map: 'route', x: 5, y: 5 } };
     const store = memoryStore({ [SAVE_KEY]: JSON.stringify({ version: 1, savedAt: '2026-10-10T00:00:00Z', state: v1 }) });
     expect(loadGame(store, data)).toEqual({ state: { ...v1, npcsBeaten: [] } });
+  });
+
+  it('the 1 → 2 upgrade itself adds an empty NPC list and leaves non-objects for the repair step to reject', () => {
+    const v1 = { party: [], box: [], book: {}, position: START };
+    expect(MIGRATIONS[1](v1)).toEqual({ ...v1, npcsBeaten: [] });
+    expect(MIGRATIONS[1]('junk')).toBe('junk');
+    const store = memoryStore({ [SAVE_KEY]: JSON.stringify({ version: 1, state: 'junk' }) });
+    expect(loadGame(store, data)).toEqual({ state: null, problem: 'save has no party' });
   });
 
   it('a missing or crashing upgrade backs up the save and protects it from autosave', () => {
