@@ -321,6 +321,12 @@ describe('repairs that keep the game going', () => {
     }
   });
 
+  it("puts a player saved where an NPC now stands back at the start", () => {
+    const npc = MAPS.town.npcs![0];
+    const store = storedWith((f) => { f.state.position = { map: 'town', x: npc.x, y: npc.y }; });
+    expect(loadGame(store, data).state!.position).toEqual(START);
+  });
+
   it('keeps only valid Book entries, and every creature you own counts as caught', () => {
     const store = storedWith((f) => { f.state.book = { firey: 'seen', ghost: 'caught', watery: 'banana' }; });
     expect(loadGame(store, data).state!.book).toEqual({ firey: 'caught', watery: 'caught' });

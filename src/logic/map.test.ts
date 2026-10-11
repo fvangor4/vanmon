@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { findPath, parseMap, type GameMap, type MapDef, type Point } from './map';
 import { MAPS, START } from '../data/maps';
+import { NPCS } from './npcs';
 
 function def(rows: string[], extra: Partial<MapDef> = {}): MapDef {
   return { id: 'test', name: 'Test', rows, warps: [], ...extra };
@@ -72,7 +73,7 @@ describe('NPCs on a map', () => {
     expect(() => parseMap(def(['.T'], { npcs: [{ id: 'a', x: 1, y: 0 }] }))).toThrow(/NPC "a".*walkable/);
     expect(() => parseMap(def(['..'], { warps, npcs: [{ id: 'a', x: 0, y: 0 }] }))).toThrow(/NPC "a".*exit/);
     expect(() => parseMap(def(['D.'], { home: { x: 0, y: 0 }, npcs: [{ id: 'a', x: 0, y: 0 }] }))).toThrow(/NPC "a".*door/);
-    expect(() => parseMap(def(['..'], { npcs: [{ id: 'a', x: 1, y: 0 }, { id: 'b', x: 1, y: 0 }] }))).toThrow(/NPC "b"/);
+    expect(() => parseMap(def(['..'], { npcs: [{ id: 'a', x: 1, y: 0 }, { id: 'b', x: 1, y: 0 }] }))).toThrow(/NPC "b".*another NPC/);
   });
 });
 
@@ -197,12 +198,13 @@ describe('game maps', () => {
 });
 
 describe('the Gold Kid in town', () => {
-  /** Every tile you can walk to from `from`, including exits. */
+  /** Every tile you can walk to from `from`. Like findPath, exits can be stepped onto but not walked through. */
   function reachable(m: GameMap, from: Point): Set<string> {
     const seen = new Set([`${from.x},${from.y}`]);
     const queue = [from];
     for (let i = 0; i < queue.length; i++) {
       const { x, y } = queue[i];
+      if (i > 0 && m.warpAt(x, y)) continue;
       for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) {
         const k = `${x + dx},${y + dy}`;
         if (m.isWalkable(x + dx, y + dy) && !seen.has(k)) {
@@ -231,5 +233,11 @@ describe('the Gold Kid in town', () => {
     const npc = MAPS.town.npcs!.find((n) => n.id === 'gold-kid')!;
     without.delete(`${npc.x},${npc.y}`);
     expect(withNpc).toEqual(without);
+  });
+
+  it('every NPC placed on any map is a known NPC', () => {
+    for (const map of Object.values(MAPS)) {
+      for (const n of map.npcs ?? []) expect(Object.hasOwn(NPCS, n.id), `${map.id}: ${n.id}`).toBe(true);
+    }
   });
 });
