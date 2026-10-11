@@ -17,6 +17,8 @@ import type { MathLaunch } from './MathScene';
 import { GOLD_KID_TEXTURE, PLAYER_TEXTURE, TILE, tileTexture } from './textures';
 
 const STEP_MS = 160;
+/** How each NPC looks on the map. */
+const NPC_TEXTURES: Record<string, string> = { 'gold-kid': GOLD_KID_TEXTURE };
 
 export interface BattleLaunch {
   /** The creature to battle (an NPC's creature when `npc` is set). */
@@ -94,11 +96,22 @@ export class OverworldScene extends Phaser.Scene {
   /** NPCs stand on their tiles with a bobbing speech bubble, so kids know to tap them. */
   private drawNpcs(): void {
     for (const n of this.map.def.npcs ?? []) {
+      const texture = NPC_TEXTURES[n.id];
+      if (!texture) {
+        console.error(`VanMon: no picture for NPC "${n.id}"`);
+        continue;
+      }
       const cx = n.x * TILE + TILE / 2;
       const cy = n.y * TILE + TILE / 2;
-      this.add.image(cx, cy, GOLD_KID_TEXTURE).setDepth(9);
+      const sprite = this.add.image(cx, cy, texture).setDepth(9);
       const bubble = this.add.text(cx + 18, cy - 44, '💬', { fontFamily: FONT, fontSize: '28px' }).setOrigin(0.5).setDepth(11);
       this.tweens.add({ targets: bubble, y: cy - 52, yoyo: true, repeat: -1, duration: 600, ease: 'Sine.InOut' });
+      // The sprite and its bubble are both "tap me" targets (the bubble pokes into the tile above).
+      for (const target of [sprite, bubble]) {
+        target.setInteractive({ useHandCursor: true }).on('pointerup', () => {
+          if (!this.busy) this.approach(n);
+        });
+      }
     }
   }
 
@@ -129,6 +142,7 @@ export class OverworldScene extends Phaser.Scene {
         height: 88,
         onTap: () => {
           if (this.busy || this.pendingMenu) return;
+          this.pendingTalk = null; // the last tap wins
           this.stop();
           if (this.walking) this.pendingMenu = key;
           else this.openMenuNow(key);
@@ -243,11 +257,12 @@ export class OverworldScene extends Phaser.Scene {
 
   private isNextTo(npc: NpcSpot): boolean {
     const { x, y } = session().state.position;
-    return this.map.npcNextTo(x, y)?.id === npc.id;
+    return Math.abs(x - npc.x) + Math.abs(y - npc.y) === 1;
   }
 
   /** Tapped an NPC: talk now if right next to it, otherwise walk over first. */
   private approach(npc: NpcSpot): void {
+    this.pendingMenu = null; // the last tap wins
     this.pendingTalk = npc;
     if (this.walking) {
       this.walkTo(npc); // the walk's end picks up pendingTalk
@@ -263,7 +278,10 @@ export class OverworldScene extends Phaser.Scene {
   }
 
   private async talk(spot: NpcSpot): Promise<void> {
-    if (!Object.hasOwn(NPCS, spot.id)) return;
+    if (!Object.hasOwn(NPCS, spot.id)) {
+      console.error(`VanMon: unknown NPC "${spot.id}" on map ${this.map.def.id}`);
+      return;
+    }
     const npc = NPCS[spot.id];
     this.stop();
     this.busy = true;
