@@ -16,6 +16,13 @@ describe('pickStarters', () => {
     expect(pickStarters(validateCreatureData(shipped)).map((s) => s.id)).toEqual(['emberpup', 'puddlefin', 'sproutle']);
   });
 
+  it('never offers a prize-only (wild: false) creature', () => {
+    const data = validateCreatureData(shipped);
+    const sp = (id: string, wild?: boolean) => ({ ...data.species[0], id, type: 'fire' as const, wild });
+    const prizeFirst = { ...data, species: [sp('prize', false), sp('f1'), sp('f2', true)] };
+    expect(pickStarters(prizeFirst).map((s) => s.id)).toEqual(['f1']);
+  });
+
   it('skips a type with no creatures', () => {
     const data = validateCreatureData(shipped);
     const noWater = { ...data, species: data.species.filter((s) => s.type !== 'water') };
