@@ -33,6 +33,8 @@ export interface SpeciesDef {
   moves: string[];
   /** Map ids where it lives in the tall grass. Leave out to live everywhere. */
   areas?: string[];
+  /** false = never in the tall grass (only given as a prize). Leave out for a normal creature. */
+  wild?: boolean;
 }
 
 export interface CreatureData {
@@ -139,6 +141,11 @@ function checkSpecies(
   if (raw.areas !== undefined) {
     const ok = Array.isArray(raw.areas) && raw.areas.length > 0 && raw.areas.every((a) => typeof a === 'string' && ID_PATTERN.test(a));
     if (!ok) problems.push(`${label}: areas must be a list of map ids like ["route", "pond"]`);
+  }
+  if (raw.wild !== undefined && typeof raw.wild !== 'boolean') {
+    problems.push(`${label}: wild must be true or false`);
+  } else if (raw.wild === false && raw.areas !== undefined) {
+    problems.push(`${label}: a creature with "wild": false never lives in the grass, so leave out "areas"`);
   }
 
   if (!Array.isArray(raw.moves) || raw.moves.length !== 2) {

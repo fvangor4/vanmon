@@ -1,6 +1,7 @@
 // Wild encounters in tall grass. Which creatures live where comes from the
 // optional "areas" list in creatures.json, so a new creature shows up in the
-// grass without any code change (no "areas" = it lives everywhere).
+// grass without any code change (no "areas" = it lives everywhere, and
+// "wild": false = it never does).
 
 import type { CreatureData, SpeciesDef } from './creatures';
 import type { Rng } from './damage';
@@ -23,7 +24,7 @@ export interface Encounter {
 }
 
 export function speciesForArea(data: CreatureData, mapId: string): SpeciesDef[] {
-  return data.species.filter((s) => !s.areas || s.areas.includes(mapId));
+  return data.species.filter((s) => s.wild !== false && (!s.areas || s.areas.includes(mapId)));
 }
 
 function roll(rng: Rng): number {

@@ -29,6 +29,24 @@ describe('speciesForArea', () => {
     expect(speciesForArea(data, 'route').map((s) => s.id)).toEqual(['firey', 'anywhere']);
     expect(speciesForArea(data, 'pond').map((s) => s.id)).toEqual(['watery', 'anywhere']);
   });
+
+  it('never includes species marked wild: false', () => {
+    const withPrize: CreatureData = {
+      ...data,
+      species: [...data.species, { ...data.species[2], id: 'prize', wild: false }],
+    };
+    expect(speciesForArea(withPrize, 'route').map((s) => s.id)).toEqual(['firey', 'anywhere']);
+    expect(speciesForArea(withPrize, 'pond').map((s) => s.id)).toEqual(['watery', 'anywhere']);
+  });
+
+  it('keeps Super Shadehog out of the shipped grass, and every other pool as it was', () => {
+    const creatures = validateCreatureData(shipped);
+    const pools = Object.fromEntries(Object.keys(AREAS).map((id) => [id, speciesForArea(creatures, id).map((s) => s.id)]));
+    expect(pools).toEqual({
+      route: ['emberpup', 'toastle', 'sproutle', 'leafbun', 'zoomhog', 'twintail', 'shadehog'],
+      pond: ['puddlefin', 'bubbloo', 'sproutle', 'zoomhog'],
+    });
+  });
 });
 
 describe('rollEncounter', () => {

@@ -166,6 +166,22 @@ describe('validateCreatureData', () => {
     }
   });
 
+  it('accepts an optional wild flag, and rejects wild: false alongside areas', () => {
+    expect(problemsOf(mutated((d) => (d.species[0].wild = false)))).toEqual([]);
+    expect(problemsOf(mutated((d) => (d.species[0].wild = true)))).toEqual([]);
+    expect(problemsOf(mutated((d) => (d.species[0].wild = 'no')))).toContainEqual(
+      'species "emberpup": wild must be true or false',
+    );
+    expect(
+      problemsOf(
+        mutated((d) => {
+          d.species[0].wild = false;
+          d.species[0].areas = ['route'];
+        }),
+      ),
+    ).toContainEqual('species "emberpup": a creature with "wild": false never lives in the grass, so leave out "areas"');
+  });
+
   it('requires exactly 2 moves', () => {
     expect(problemsOf(mutated((d) => (d.species[0].moves = ['bump'])))).toContainEqual(
       'species "emberpup": must have exactly 2 moves',

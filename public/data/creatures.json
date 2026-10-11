@@ -105,7 +105,7 @@
       "image": "super-shadehog.svg",
       "baseStats": { "hp": 55, "attack": 65, "defense": 45 },
       "moves": ["night-dash", "flame-dash"],
-      "areas": ["route"]
+      "wild": false
     }
   ]
 }
