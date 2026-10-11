@@ -119,8 +119,9 @@ rigor:
       It restores and saves the drawing via task 3. Registered in `main.ts`.
       files: src/scenes/DrawScene.ts, src/main.ts
       commits: [f1e3f08, e2e777a]
-- [~] 5. 🎨 HUD button opens DrawScene with the same guards as 🎒/📖.
+- [x] 5. 🎨 HUD button opens DrawScene with the same guards as 🎒/📖.
       files: src/scenes/OverworldScene.ts
+      commits: [3c734f9]
 - [ ] 6. Fill bucket and Undo in DrawScene (using tasks 1 and 2). Hold-to-clear
       with `HoldButton` clears the canvas and the stored drawing.
       files: src/scenes/DrawScene.ts
@@ -163,3 +164,6 @@ rigor:
 - task 4 review, code findings: all fixed in e2e777a. The restore race moved to module scope, closing mid-stroke now saves on SHUTDOWN, onerror warns, refresh happens once per frame in update(), and the blanket input.off was removed. Re-review pass.
 - Browser pane note: when the pane is hidden, rAF stops. Step frames with `__game.loop.step(performance.now())`.
 - task 5: implemented. Added 🎨 to the HUD list, so it shares the busy/pendingMenu guards. Browser check: 🎨 opens Draw over the paused Overworld. A stroke, then ❌, returns to the same spot in Home Town. Reopening shows the stroke (in-session texture reuse). No console errors.
+- task 5 review: code pass. Spec findings:
+  - (1) The mid-step and battle paths were untested → browser check: tapping 🎨 mid-walk queues `pendingMenu='Draw'` and opens it after the step. Battles replace the Overworld scene, so there's no HUD in battle.
+  - (2) 📦 Box moves one slot left in Home Town → kept. With 🎨 third, 🎒/📖/🎨 sit in the same spot on every map and only the home-only Box is added at the end. Putting 🎨 last would make 🎨 jump between maps. Mention to the user.
