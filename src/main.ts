@@ -4,6 +4,7 @@ import { BattleScene } from './scenes/BattleScene';
 import { BookScene } from './scenes/BookScene';
 import { BootScene } from './scenes/BootScene';
 import { BoxScene } from './scenes/BoxScene';
+import { DrawScene } from './scenes/DrawScene';
 import { PartyScene } from './scenes/PartyScene';
 import { OverworldScene } from './scenes/OverworldScene';
 import { StarterScene } from './scenes/StarterScene';
@@ -27,7 +28,7 @@ const game = new Phaser.Game({
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   input: { activePointers: 2 },
-  scene: [BootScene, TitleScene, StarterScene, OverworldScene, BattleScene, PartyScene, BoxScene, BookScene],
+  scene: [BootScene, TitleScene, StarterScene, OverworldScene, BattleScene, PartyScene, BoxScene, BookScene, DrawScene],
 });
 
 // Dev only: lets automated checks drive the game (e.g. step frames while the tab is hidden).

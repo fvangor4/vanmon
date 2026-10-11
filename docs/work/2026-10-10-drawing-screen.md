@@ -114,7 +114,7 @@ rigor:
       wrong-version and throwing stores, and has a clear() function.
       files: src/logic/drawingStore.ts, src/logic/drawingStore.test.ts
       commits: [5f02e59, 48d36eb]
-- [ ] 4. DrawScene basics: a canvas you can draw on with a finger, 8 crayon colors,
+- [~] 4. DrawScene basics: a canvas you can draw on with a finger, 8 crayon colors,
       thin and thick brushes, eraser, and ❌ close back to the Overworld via `menuBase`.
       It restores and saves the drawing via task 3. Registered in `main.ts`.
       files: src/scenes/DrawScene.ts, src/main.ts
@@ -153,3 +153,4 @@ rigor:
   - (2) A failed save leaves the older drawing in storage → accepted. An older picture beats a blank one, and the canvas on screen still has the new one.
   - (7) Junk left in storage on a failed load → accepted. The first stroke overwrites it, and deleting a wrong-version entry would destroy a newer game's drawing.
   - Re-review pass.
+- task 4: implemented. Checked in the browser pane: thick black, thin red and eraser strokes draw. The drawing is stored (16 KB) and restored after a page reload. A corrupt stored value gives a blank canvas with no console errors. ❌ close not yet exercised from the overworld; that comes in task 5. The canvas texture is kept between visits so returning is instant. The store is a module-level `browserStore()`, because session's store is private and session.ts is outside this task.
