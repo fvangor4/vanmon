@@ -66,7 +66,7 @@ would replace a starter. Creatures with `"wild": false` are never starters.)
 | `moves` | Exactly two: one **normal** move and one move of the creature's own type. |
 | `areas` | `"route"`, `"pond"`, or both. Leave the line out to have it appear everywhere. |
 | `wild` | Optional. `false` means it never appears in the tall grass. Leave out `areas` when you use it. Only an NPC can then give it to the kids (Super Shadehog is the Gold Kid's prize). A new NPC needs code (its entry in `src/logic/npcs.ts`, a spot in `src/data/maps.ts`, and a picture in `src/scenes/textures.ts`), so ask Claude. |
-| `rare` | Optional. `true` makes it half as likely to show up as the other creatures in the same grass (Shiny Zoomhog is rare at Sparkle Pond). Leave it out for a normal creature. |
+| `rare` | Optional. `true` makes it half as likely to show up as a normal creature in the same grass (Shiny Zoomhog is rare at Sparkle Pond). Leave it out for a normal creature. |
 
 Moves you can use today:
 
