@@ -42,16 +42,30 @@ function choicesFor(answer: number, rng: Rng): number[] {
   return shuffle([answer, take(near, rng), take(near, rng)], rng);
 }
 
-/** Three different sums a + b (a, b ≥ 1, a + b ≤ 10). */
+/**
+ * Three different sums a + b (a, b ≥ 1, a + b ≤ 10). The total is picked first,
+ * evenly, so big totals (which have the most pairs) don't crowd out small ones
+ * and "tap the biggest number" isn't a winning habit. 3 + 4 and 4 + 3 count as
+ * the same question.
+ */
 export function makeQuiz(rng: Rng): MathProblem[] {
-  const sums: [number, number][] = [];
+  const byTotal = new Map<number, [number, number][]>();
   for (let a = 1; a < MAX_SUM; a++) {
-    for (let b = 1; a + b <= MAX_SUM; b++) sums.push([a, b]);
+    for (let b = 1; a + b <= MAX_SUM; b++) {
+      const pairs = byTotal.get(a + b) ?? [];
+      pairs.push([a, b]);
+      byTotal.set(a + b, pairs);
+    }
   }
   const quiz: MathProblem[] = [];
   for (let i = 0; i < QUIZ_LENGTH; i++) {
-    const [a, b] = take(sums, rng);
-    quiz.push({ a, b, answer: a + b, choices: choicesFor(a + b, rng) });
+    const totals = [...byTotal.keys()].filter((t) => byTotal.get(t)!.length > 0);
+    const total = take(totals, rng);
+    const pairs = byTotal.get(total)!;
+    const [a, b] = take(pairs, rng);
+    const mirror = pairs.findIndex(([x, y]) => x === b && y === a);
+    if (mirror >= 0) pairs.splice(mirror, 1);
+    quiz.push({ a, b, answer: total, choices: choicesFor(total, rng) });
   }
   return quiz;
 }

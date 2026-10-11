@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_SUM, QUIZ_LENGTH, makeQuiz } from './mathQuiz';
+import { makeQuiz } from './mathQuiz';
 
 /** Small seeded generator so every run checks the same many quizzes. */
 function seeded(seed: number) {
@@ -14,12 +14,11 @@ function seeded(seed: number) {
 
 describe('makeQuiz', () => {
   it('asks three different gentle sums, each with three different choices from 0 to 10 including the answer', () => {
-    expect(QUIZ_LENGTH).toBe(3);
-    expect(MAX_SUM).toBe(10);
     for (let seed = 1; seed <= 2000; seed++) {
       const quiz = makeQuiz(seeded(seed));
       expect(quiz).toHaveLength(3);
-      expect(new Set(quiz.map((p) => `${p.a}+${p.b}`)).size, `seed ${seed}`).toBe(3);
+      // 3 + 4 and 4 + 3 count as the same question
+      expect(new Set(quiz.map((p) => `${Math.min(p.a, p.b)}+${Math.max(p.a, p.b)}`)).size, `seed ${seed}`).toBe(3);
       for (const p of quiz) {
         expect(p.a).toBeGreaterThanOrEqual(1);
         expect(p.b).toBeGreaterThanOrEqual(1);
@@ -50,16 +49,33 @@ describe('makeQuiz', () => {
     for (const n of answerSlots) expect(n / 6000).toBeGreaterThan(0.28);
   });
 
+  it('does not let "always tap the biggest number" win much more than a third of the time', () => {
+    let biggest = 0;
+    let smallest = 0;
+    let total = 0;
+    for (let seed = 1; seed <= 2000; seed++) {
+      for (const p of makeQuiz(seeded(seed))) {
+        total++;
+        if (p.answer === Math.max(...p.choices)) biggest++;
+        if (p.answer === Math.min(...p.choices)) smallest++;
+      }
+    }
+    // An answer of 10 is always the biggest (choices stop at 10), so a little over a third.
+    expect(biggest / total).toBeLessThan(0.38);
+    expect(smallest / total).toBeLessThan(0.38);
+  });
+
   it('works even with an rng that always returns the same number', () => {
     for (const r of [0, 0.5, 0.999999]) {
       const quiz = makeQuiz(() => r);
-      expect(new Set(quiz.map((p) => `${p.a}+${p.b}`)).size).toBe(3);
+      expect(new Set(quiz.map((p) => `${Math.min(p.a, p.b)}+${Math.max(p.a, p.b)}`)).size).toBe(3);
       for (const p of quiz) expect(new Set(p.choices).size).toBe(3);
     }
   });
 
   it('refuses an rng outside [0, 1)', () => {
     expect(() => makeQuiz(() => 1)).toThrow(RangeError);
+    expect(() => makeQuiz(() => -0.1)).toThrow(RangeError);
     expect(() => makeQuiz(() => Number.NaN)).toThrow(RangeError);
   });
 });
