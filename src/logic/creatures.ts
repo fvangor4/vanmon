@@ -35,6 +35,8 @@ export interface SpeciesDef {
   areas?: string[];
   /** false = never in the tall grass (only given as a prize). Leave out for a normal creature. */
   wild?: boolean;
+  /** true = half as likely as a normal creature in the same grass. Leave out for a normal creature. */
+  rare?: boolean;
 }
 
 export interface CreatureData {
@@ -146,6 +148,9 @@ function checkSpecies(
     problems.push(`${label}: wild must be true or false`);
   } else if (raw.wild === false && raw.areas !== undefined) {
     problems.push(`${label}: a creature with "wild": false never lives in the grass, so leave out "areas"`);
+  }
+  if (raw.rare !== undefined && typeof raw.rare !== 'boolean') {
+    problems.push(`${label}: rare must be true or false`);
   }
 
   if (!Array.isArray(raw.moves) || raw.moves.length !== 2) {

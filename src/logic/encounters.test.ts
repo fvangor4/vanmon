@@ -79,6 +79,28 @@ describe('rollEncounter', () => {
     expect(() => rollEncounter(route, pool, seq(0.1, Number.NaN), 10)).toThrow(RangeError);
   });
 
+  it('gives a rare creature half the chance of a normal one', () => {
+    // 3 normal (weight 1 each) + 1 rare (weight 0.5): the rare one owns the last 0.5 / 3.5 of the pick roll.
+    const rarePool = [...pool, data.species[1], { ...data.species[1], id: 'shiny', rare: true }];
+    const pick = (r: number) => rollEncounter(route, rarePool, seq(0.1, r, 0), 10)?.speciesId;
+    expect(pick(0)).toBe('firey');
+    expect(pick(2.99 / 3.5)).toBe('watery');
+    expect(pick(3.01 / 3.5)).toBe('shiny');
+    expect(pick(0.999)).toBe('shiny');
+    // Rare first in the pool: its slot is the first 0.5 / 3.5.
+    const rareFirst = [rarePool[3], ...rarePool.slice(0, 3)];
+    const pickFirst = (r: number) => rollEncounter(route, rareFirst, seq(0.1, r, 0), 10)?.speciesId;
+    expect(pickFirst(0.49 / 3.5)).toBe('shiny');
+    expect(pickFirst(0.51 / 3.5)).toBe('firey');
+  });
+
+  it('picks exactly as before when no creature is rare (same roll, same creature)', () => {
+    const plain = [...pool, data.species[1]]; // firey, anywhere, watery
+    for (const r of [0, 0.2, 1 / 3 - 1e-9, 1 / 3, 0.5, 2 / 3, 0.9, 0.999]) {
+      expect(rollEncounter(route, plain, seq(0.1, r, 0), 10)?.speciesId, `roll ${r}`).toBe(plain[Math.floor(r * 3)].id);
+    }
+  });
+
   it('picks every species and level evenly over many steps', () => {
     let a = 7;
     const rng = () => {

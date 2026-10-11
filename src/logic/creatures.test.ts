@@ -182,6 +182,14 @@ describe('validateCreatureData', () => {
     ).toContainEqual('species "emberpup": a creature with "wild": false never lives in the grass, so leave out "areas"');
   });
 
+  it('accepts an optional rare flag, and rejects anything but true or false', () => {
+    expect(problemsOf(mutated((d) => (d.species[0].rare = true)))).toEqual([]);
+    expect(problemsOf(mutated((d) => (d.species[0].rare = false)))).toEqual([]);
+    expect(problemsOf(mutated((d) => (d.species[0].rare = 'yes')))).toContainEqual(
+      'species "emberpup": rare must be true or false',
+    );
+  });
+
   it('requires exactly 2 moves', () => {
     expect(problemsOf(mutated((d) => (d.species[0].moves = ['bump'])))).toContainEqual(
       'species "emberpup": must have exactly 2 moves',

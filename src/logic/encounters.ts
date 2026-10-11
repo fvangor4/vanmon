@@ -8,6 +8,9 @@ import type { Rng } from './damage';
 import type { MapDef } from './map';
 import { LEVEL_CAP } from './xp';
 
+/** How likely a "rare": true creature is, next to a normal one (1). */
+export const RARE_WEIGHT = 0.5;
+
 /** Steps in tall grass after a battle before the next one can start. */
 export const ENCOUNTER_COOLDOWN_STEPS = 3;
 
@@ -25,6 +28,17 @@ export interface Encounter {
 
 export function speciesForArea(data: CreatureData, mapId: string): SpeciesDef[] {
   return data.species.filter((s) => s.wild !== false && (!s.areas || s.areas.includes(mapId)));
+}
+
+/** Picks from the pool by weight. With no rare creatures this is the same as pool[floor(r * length)]. */
+function pickSpecies(pool: SpeciesDef[], r: number): SpeciesDef {
+  const weight = (s: SpeciesDef) => (s.rare ? RARE_WEIGHT : 1);
+  let target = r * pool.reduce((sum, s) => sum + weight(s), 0);
+  for (const s of pool) {
+    target -= weight(s);
+    if (target < 0) return s;
+  }
+  return pool[pool.length - 1];
 }
 
 function roll(rng: Rng): number {
@@ -47,7 +61,7 @@ export function rollEncounter(
 ): Encounter | null {
   if (stepsSinceBattle < ENCOUNTER_COOLDOWN_STEPS || pool.length === 0) return null;
   if (roll(rng) >= area.chance) return null;
-  const species = pool[Math.floor(roll(rng) * pool.length)];
+  const species = pickSpecies(pool, roll(rng));
   const level = area.minLevel + Math.floor(roll(rng) * (area.maxLevel - area.minLevel + 1));
   return { speciesId: species.id, level };
 }
