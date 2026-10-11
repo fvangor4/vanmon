@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { battleText, boxText, levelUpText, npcIntroText, prizeText, TYPE_ICON } from './battleText';
+import { battleText, boxText, levelUpText, npcIntroText, prizeText, TYPE_ICON, typeLabel } from './battleText';
 
 const names = { player: (i: number) => ['Emberpup', 'Puddlefin'][i], active: 0, wild: 'Leafbun' };
 
@@ -50,6 +50,12 @@ describe('other battle messages', () => {
   it('has an icon for every move type', () => {
     expect(Object.keys(TYPE_ICON).sort()).toEqual(['fire', 'leaf', 'normal', 'water']);
     for (const icon of Object.values(TYPE_ICON)) expect(icon.trim()).not.toBe('');
+  });
+
+  it('labels each creature type with its icon and name', () => {
+    expect(typeLabel('fire')).toBe('🔥 Fire');
+    expect(typeLabel('water')).toBe('💧 Water');
+    expect(typeLabel('leaf')).toBe('🍃 Leaf');
   });
 });
 

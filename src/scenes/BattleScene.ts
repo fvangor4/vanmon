@@ -4,8 +4,8 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config';
 import { makeBattleContext, startBattle, takeTurn, type BattleAction, type BattleEvent, type BattleState } from '../logic/battle';
-import { battleText, boxText, levelUpText, npcIntroText, prizeText, TYPE_ICON, type BattleNames } from '../logic/battleText';
-import type { Creature } from '../logic/creatures';
+import { battleText, boxText, levelUpText, npcIntroText, prizeText, TYPE_ICON, typeLabel, type BattleNames } from '../logic/battleText';
+import type { Creature, CreatureType } from '../logic/creatures';
 import { applyBattleOutcome, PARTY_MAX, type OutcomeResult } from '../logic/gameState';
 import { NPCS, type NpcDef } from '../logic/npcs';
 import { creatureTexture, session } from '../session';
@@ -25,25 +25,41 @@ function readingTime(text: string): number {
   return Math.max(1300, text.split(/\s+/).length * 420);
 }
 
+const CARD_W = 320;
+const CARD_PAD = 18;
+const NAME_FONT_MAX = 28;
+const NAME_FONT_MIN = 16;
+
+const hex = (color: number) => `#${color.toString(16).padStart(6, '0')}`;
+
 class HpCard extends Phaser.GameObjects.Container {
   private bar: Phaser.GameObjects.Graphics;
   private label: Phaser.GameObjects.Text;
+  private typeTag: Phaser.GameObjects.Text;
   private shown = 1;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y);
     const bg = scene.add.graphics();
-    bg.fillStyle(0x000000, 0.2).fillRoundedRect(0, 6, 320, 90, 20);
-    bg.fillStyle(COLORS.panel, 1).fillRoundedRect(0, 0, 320, 90, 20);
-    bg.lineStyle(4, COLORS.ink, 1).strokeRoundedRect(0, 0, 320, 90, 20);
-    this.label = scene.add.text(18, 10, '', { fontFamily: FONT, fontSize: '28px', fontStyle: 'bold', color: '#1d2b3a' });
+    bg.fillStyle(0x000000, 0.2).fillRoundedRect(0, 6, CARD_W, 90, 20);
+    bg.fillStyle(COLORS.panel, 1).fillRoundedRect(0, 0, CARD_W, 90, 20);
+    bg.lineStyle(4, COLORS.ink, 1).strokeRoundedRect(0, 0, CARD_W, 90, 20);
+    this.label = scene.add.text(CARD_PAD, 28, '', { fontFamily: FONT, fontSize: `${NAME_FONT_MAX}px`, fontStyle: 'bold', color: '#1d2b3a' }).setOrigin(0, 0.5);
+    this.typeTag = scene.add.text(CARD_W - CARD_PAD, 28, '', { fontFamily: FONT, fontSize: '20px', fontStyle: 'bold' }).setOrigin(1, 0.5);
     this.bar = scene.add.graphics();
-    this.add([bg, this.label, this.bar]);
+    this.add([bg, this.label, this.typeTag, this.bar]);
     scene.add.existing(this);
   }
 
-  show(name: string, c: Creature): void {
-    this.label.setText(`${name}  Lv ${c.level}`);
+  show(species: { name: string; type: CreatureType }, c: Creature): void {
+    this.typeTag.setText(typeLabel(species.type)).setColor(hex(COLORS[species.type]));
+    this.label.setText(`${species.name}  Lv ${c.level}`);
+    // Long kid-made names shrink to fit beside the type tag.
+    const room = CARD_W - CARD_PAD * 2 - this.typeTag.width - 10;
+    let size = NAME_FONT_MAX;
+    this.label.setFontSize(size).setScale(1);
+    while (this.label.width > room && size > NAME_FONT_MIN) this.label.setFontSize(--size);
+    if (this.label.width > room) this.label.setScale(room / this.label.width);
     this.shown = c.hp / c.maxHp;
     this.drawBar(this.shown);
   }
@@ -113,9 +129,9 @@ export class BattleScene extends Phaser.Scene {
       .setDisplaySize(CREATURE_SIZE * 1.1, CREATURE_SIZE * 1.1)
       .setFlipX(true);
     this.wildCard = new HpCard(this, 60, 60);
-    this.wildCard.show(s.speciesById(wild.speciesId).name, wild);
+    this.wildCard.show(s.speciesById(wild.speciesId), wild);
     this.playerCard = new HpCard(this, 640, 400);
-    this.playerCard.show(s.speciesById(active.speciesId).name, active);
+    this.playerCard.show(s.speciesById(active.speciesId), active);
     this.dialog = new DialogBox(this);
 
     this.cameras.main.fadeIn(250);
@@ -280,7 +296,7 @@ export class BattleScene extends Phaser.Scene {
       case 'swap': {
         const c = this.battle.party[e.partyIndex];
         this.playerSprite.setTexture(creatureTexture(c.speciesId)).setDisplaySize(CREATURE_SIZE * 1.1, CREATURE_SIZE * 1.1).setAlpha(1).setY(PLAYER_SPOT.y);
-        this.playerCard.show(session().speciesById(c.speciesId).name, c);
+        this.playerCard.show(session().speciesById(c.speciesId), c);
         if (text) await this.say(text);
         break;
       }
@@ -329,7 +345,7 @@ export class BattleScene extends Phaser.Scene {
     if (wentToBox) await this.say(boxText(n.wild), true);
     if (levelUps.length > 0) {
       const grown = session().state.party[this.battle.activeIndex];
-      this.playerCard.show(n.player(this.battle.activeIndex), grown);
+      this.playerCard.show(session().speciesById(grown.speciesId), grown);
       this.tweens.add({ targets: this.playerSprite, scaleX: this.playerSprite.scaleX * 1.15, scaleY: this.playerSprite.scaleY * 1.15, yoyo: true, duration: 250, repeat: 1 });
     }
     for (const level of levelUps) await this.say(levelUpText(n.player(this.battle.activeIndex), level), true);
@@ -339,8 +355,9 @@ export class BattleScene extends Phaser.Scene {
 
   /** The NPC's creature hops back in, sparkling, as a gift. */
   private async givePrize(creature: Creature, where: 'party' | 'box'): Promise<void> {
-    const name = session().speciesById(creature.speciesId).name;
-    this.wildCard.show(name, creature);
+    const species = session().speciesById(creature.speciesId);
+    const name = species.name;
+    this.wildCard.show(species, creature);
     this.wildSprite.setTexture(creatureTexture(creature.speciesId)).setDisplaySize(CREATURE_SIZE, CREATURE_SIZE).setPosition(WILD_SPOT.x, WILD_SPOT.y).setAlpha(0);
     this.tweens.add({ targets: this.wildSprite, alpha: 1, duration: 400 });
     this.tweens.add({ targets: this.wildSprite, y: WILD_SPOT.y - 30, yoyo: true, repeat: 2, duration: 220, ease: 'Sine.Out' });

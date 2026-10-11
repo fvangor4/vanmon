@@ -11,6 +11,11 @@ export const TYPE_ICON: Record<MoveType, string> = {
   leaf: '🍃',
 };
 
+/** A type's icon and name, e.g. "🔥 Fire", for the battle cards. */
+export function typeLabel(type: MoveType): string {
+  return `${TYPE_ICON[type]} ${type[0].toUpperCase()}${type.slice(1)}`;
+}
+
 export interface BattleNames {
   /** Name of the player's creature in a party slot. */
   player(partyIndex: number): string;
