@@ -223,7 +223,10 @@ describe('the Gold Kid in town', () => {
     expect(town.isWalkable(npc!.x, npc!.y)).toBe(false);
     expect(npc).not.toMatchObject({ x: START.x, y: START.y });
     const fromStart = reachable(town, START);
-    const talkSpots = [[0, -1], [1, 0], [0, 1], [-1, 0]].filter(([dx, dy]) => fromStart.has(`${npc!.x + dx},${npc!.y + dy}`));
+    // a spot you can stand on: reachable, and not an exit (that would send you to another map)
+    const talkSpots = [[0, -1], [1, 0], [0, 1], [-1, 0]].filter(
+      ([dx, dy]) => fromStart.has(`${npc!.x + dx},${npc!.y + dy}`) && !town.warpAt(npc!.x + dx, npc!.y + dy),
+    );
     expect(talkSpots.length).toBeGreaterThan(0);
   });
 
