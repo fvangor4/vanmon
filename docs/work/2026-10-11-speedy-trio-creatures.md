@@ -125,7 +125,8 @@ rigor:
       that the shipped data's starters are still emberpup, puddlefin and sproutle.
       Then check in the preview: Book paging, and one wild battle with each new creature.
       files: public/data/creatures.json, src/logic/starters.test.ts
-- [ ] 3. Docs: add the six new moves to "Moves you can use today" in
+      commits: [96b7ccb]
+- [~] 3. Docs: add the six new moves to "Moves you can use today" in
       ADDING_CREATURES, and say new creatures go at the end of the list
       (so the starters don't change).
       files: docs/ADDING_CREATURES.md
@@ -142,3 +143,4 @@ rigor:
   - real-module `calcDamage` gives sensible damage and effectiveness for all six moves against each type.
   - `speciesForArea`: route has 7 species incl. all three new ones; pond has 4 incl. Zoomhog.
   - Book detail view of a new creature not seen, since they're unseen in this save; the art was checked at 340 px in task 1.
+- task 3: implemented. Added the six moves to the guide's move list, and a note to add new creatures at the end of the species list.

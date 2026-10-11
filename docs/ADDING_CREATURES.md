@@ -40,7 +40,9 @@ First time only: install the tools with `npm install`.
 
 ### 2. Add the creature to `public/data/creatures.json`
 
-Add an entry to the `"species"` list:
+Add an entry at the **end** of the `"species"` list. (The three starters are the
+first fire, water and leaf creatures in the list, so a new creature put higher up
+would replace a starter.)
 
 ```json
 {
@@ -66,10 +68,10 @@ Add an entry to the `"species"` list:
 
 Moves you can use today:
 
-- Normal: `bump`, `bonk`, `swipe`
-- Fire: `spark`, `flame-dash`
-- Water: `splash-shot`, `bubble-pop`
-- Leaf: `leaf-toss`, `vine-swing`
+- Normal: `bump`, `bonk`, `swipe`, `zoom-roll`, `tail-whirl`, `night-dash`
+- Fire: `spark`, `flame-dash`, `ember-skate`
+- Water: `splash-shot`, `bubble-pop`, `wave-dash`
+- Leaf: `leaf-toss`, `vine-swing`, `leaf-twister`
 
 To invent a new move, add it to the `"moves"` list at the top of the file:
 
