@@ -119,7 +119,7 @@ rigor:
       It restores and saves the drawing via task 3. Registered in `main.ts`.
       files: src/scenes/DrawScene.ts, src/main.ts
       commits: [f1e3f08, e2e777a]
-- [ ] 5. 🎨 HUD button opens DrawScene with the same guards as 🎒/📖.
+- [~] 5. 🎨 HUD button opens DrawScene with the same guards as 🎒/📖.
       files: src/scenes/OverworldScene.ts
 - [ ] 6. Fill bucket and Undo in DrawScene (using tasks 1 and 2). Hold-to-clear
       with `HoldButton` clears the canvas and the stored drawing.
@@ -162,3 +162,4 @@ rigor:
   - (4) ❌ return and reopening in-session not yet checked → verify in task 5.
 - task 4 review, code findings: all fixed in e2e777a. The restore race moved to module scope, closing mid-stroke now saves on SHUTDOWN, onerror warns, refresh happens once per frame in update(), and the blanket input.off was removed. Re-review pass.
 - Browser pane note: when the pane is hidden, rAF stops. Step frames with `__game.loop.step(performance.now())`.
+- task 5: implemented. Added 🎨 to the HUD list, so it shares the busy/pendingMenu guards. Browser check: 🎨 opens Draw over the paused Overworld. A stroke, then ❌, returns to the same spot in Home Town. Reopening shows the stroke (in-session texture reuse). No console errors.

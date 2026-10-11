@@ -92,7 +92,7 @@ export class OverworldScene extends Phaser.Scene {
 
   /** Menu buttons in the top-right corner. The Box lives at home, in Home Town. */
   private drawHud(): void {
-    const buttons: [string, string][] = [['🎒', 'Party'], ['📖', 'Book']];
+    const buttons: [string, string][] = [['🎒', 'Party'], ['📖', 'Book'], ['🎨', 'Draw']];
     if (this.map.def.home) buttons.push(['📦', 'Box']);
     buttons.forEach(([icon, key], i) => {
       const b = new BigButton(this, GAME_WIDTH - 70 - i * 116, 60, {
