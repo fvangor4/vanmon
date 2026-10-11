@@ -280,13 +280,23 @@ describe('applyBattleOutcome in a Gold Kid battle', () => {
     expect(applyBattleOutcome(g, b, npcData).state.position).toEqual(START);
   });
 
-  it('running away changes nothing but the Book', () => {
-    const g = { ...withParty([mon('firey')]), position: away };
+  it('running away only records Super Shadehog as seen in the Book', () => {
+    const g = { ...withParty([mon('firey', 5, 4)], [mon('watery', 2, 1)]), position: away };
     const { state, prize } = applyBattleOutcome(g, npcBattle(g, 'ran', hog(5)), npcData);
-    expect(state.position).toEqual(away);
-    expect(state.party).toHaveLength(1);
-    expect(state.npcsBeaten).toEqual([]);
+    expect(state).toEqual({ ...g, book: { ...g.book, 'super-shadehog': 'seen' } });
     expect(prize).toBeUndefined();
+  });
+
+  it('refuses an unknown NPC, even one named like a built-in object key', () => {
+    const g = withParty([mon('firey')]);
+    for (const npcId of ['nobody', 'constructor', 'toString']) {
+      expect(() => applyBattleOutcome(g, { ...npcBattle(g, 'lost'), npcId }, npcData), npcId).toThrow(`unknown NPC "${npcId}"`);
+    }
+  });
+
+  it("refuses a first win when the prize creature is missing from creatures.json", () => {
+    const g = withParty([mon('firey')]);
+    expect(() => applyBattleOutcome(g, npcBattle(g, 'won'), data)).toThrow('unknown species "super-shadehog"');
   });
 
   it('refuses a "caught" result from an NPC battle', () => {

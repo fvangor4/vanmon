@@ -106,8 +106,8 @@ export function applyBattleOutcome(
   data: CreatureData,
 ): OutcomeResult {
   if (!battle.outcome) throw new Error('battle is not over yet');
+  if (battle.npcId !== undefined && !Object.hasOwn(NPCS, battle.npcId)) throw new Error(`unknown NPC "${battle.npcId}"`);
   const npc = battle.npcId === undefined ? undefined : NPCS[battle.npcId];
-  if (battle.npcId !== undefined && !npc) throw new Error(`unknown NPC "${battle.npcId}"`);
   if (npc && battle.outcome === 'caught') throw new Error("can't catch another trainer's creature");
   const sameParty =
     battle.party.length === prev.party.length && battle.party.every((c, i) => c.uid === prev.party[i].uid);
