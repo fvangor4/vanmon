@@ -49,20 +49,22 @@ describe('makeQuiz', () => {
     for (const n of answerSlots) expect(n / 6000).toBeGreaterThan(0.28);
   });
 
-  it('does not let "always tap the biggest number" win much more than a third of the time', () => {
-    let biggest = 0;
-    let smallest = 0;
+  it('does not let "always tap the biggest, smallest or middle number" win more than about a third of the time', () => {
+    const wins = { biggest: 0, middle: 0, smallest: 0 };
     let total = 0;
     for (let seed = 1; seed <= 2000; seed++) {
       for (const p of makeQuiz(seeded(seed))) {
         total++;
-        if (p.answer === Math.max(...p.choices)) biggest++;
-        if (p.answer === Math.min(...p.choices)) smallest++;
+        const sorted = [...p.choices].sort((x, y) => x - y);
+        if (p.answer === sorted[2]) wins.biggest++;
+        else if (p.answer === sorted[1]) wins.middle++;
+        else wins.smallest++;
       }
     }
-    // An answer of 10 is always the biggest (choices stop at 10), so a little over a third.
-    expect(biggest / total).toBeLessThan(0.38);
-    expect(smallest / total).toBeLessThan(0.38);
+    for (const [habit, n] of Object.entries(wins)) {
+      expect(n / total, habit).toBeGreaterThan(0.29);
+      expect(n / total, habit).toBeLessThan(0.38);
+    }
   });
 
   it('works even with an rng that always returns the same number', () => {

@@ -34,12 +34,29 @@ function shuffle<T>(items: T[], rng: Rng): T[] {
   return out;
 }
 
+/**
+ * The answer plus two near guesses. Where the answer lands (smallest, middle or
+ * biggest of the three) is balanced so no "always tap the ..." habit wins more
+ * than about a third of the time: 10 can only be the biggest and 9 (with 10
+ * shown) is made the middle, so the other totals lean slightly toward smallest.
+ */
 function choicesFor(answer: number, rng: Rng): number[] {
-  const near: number[] = [];
-  for (let n = Math.max(0, answer - NEAR); n <= Math.min(MAX_SUM, answer + NEAR); n++) {
-    if (n !== answer) near.push(n);
+  const below: number[] = [];
+  const above: number[] = [];
+  for (let n = Math.max(0, answer - NEAR); n < answer; n++) below.push(n);
+  for (let n = answer + 1; n <= Math.min(MAX_SUM, answer + NEAR); n++) above.push(n);
+  let guessesBelow: number;
+  if (above.length === 0) guessesBelow = 2;
+  else if (above.length === 1) guessesBelow = 1;
+  else {
+    // weights for 0, 1 or 2 guesses below the answer (answer smallest, middle, biggest)
+    const r = roll(rng) * 7;
+    guessesBelow = r < 3 ? 0 : r < 5 ? 1 : 2;
   }
-  return shuffle([answer, take(near, rng), take(near, rng)], rng);
+  const guesses: number[] = [];
+  for (let i = 0; i < guessesBelow; i++) guesses.push(take(below, rng));
+  while (guesses.length < 2) guesses.push(take(above, rng));
+  return shuffle([answer, ...guesses], rng);
 }
 
 /**
