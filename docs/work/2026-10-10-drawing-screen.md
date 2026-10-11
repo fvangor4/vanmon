@@ -109,7 +109,7 @@ rigor:
       on empty returns nothing.
       files: src/logic/undo.ts, src/logic/undo.test.ts
       commits: [9d929e1, c16a594]
-- [ ] 3. Drawing storage: save/load the latest `{type, png}` under
+- [~] 3. Drawing storage: save/load the latest `{type, png}` under
       `vanmon.drawing` through a `KeyValueStore`. It tolerates missing, corrupt,
       wrong-version and throwing stores, and has a clear() function.
       files: src/logic/drawingStore.ts, src/logic/drawingStore.test.ts
@@ -142,3 +142,4 @@ rigor:
   - (3) Mixed and after-clear tests missing → added in c16a594.
   - (4) Trigger not applicable here.
   Re-review pass.
+- task 3: implemented, 8 tests pass. Added a 1.5 MB size cap so a drawing can't use up the quota the saved game needs. An unknown type is dropped but the picture is kept.
