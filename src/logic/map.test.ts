@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findPath, parseMap, type MapDef } from './map';
+import { findPath, parseMap, type GameMap, type MapDef, type Point } from './map';
 import { MAPS, START } from '../data/maps';
 
 function def(rows: string[], extra: Partial<MapDef> = {}): MapDef {
@@ -42,6 +42,37 @@ describe('parseMap', () => {
     const m = parseMap(def(['..'], { warps: [{ x: 1, y: 0, to: 'route', toX: 3, toY: 4 }] }));
     expect(m.warpAt(1, 0)).toEqual({ x: 1, y: 0, to: 'route', toX: 3, toY: 4 });
     expect(m.warpAt(0, 0)).toBeUndefined();
+  });
+});
+
+describe('NPCs on a map', () => {
+  it('stand on a tile nobody can walk onto, and can be found by position', () => {
+    const m = parseMap(def(['...', '...'], { npcs: [{ id: 'gold-kid', x: 1, y: 0 }] }));
+    expect(m.isWalkable(1, 0)).toBe(false);
+    expect(m.isWalkable(0, 0)).toBe(true);
+    expect(m.npcAt(1, 0)?.id).toBe('gold-kid');
+    expect(m.npcAt(0, 0)).toBeUndefined();
+  });
+
+  it('knows which NPC is right next to you (not diagonal)', () => {
+    const m = parseMap(def(['...', '...', '...'], { npcs: [{ id: 'gold-kid', x: 1, y: 1 }] }));
+    for (const p of [{ x: 1, y: 0 }, { x: 0, y: 1 }, { x: 2, y: 1 }, { x: 1, y: 2 }]) {
+      expect(m.npcNextTo(p.x, p.y)?.id, JSON.stringify(p)).toBe('gold-kid');
+    }
+    for (const p of [{ x: 0, y: 0 }, { x: 2, y: 2 }]) expect(m.npcNextTo(p.x, p.y)).toBeUndefined();
+  });
+
+  it('tapping an NPC walks you to the spot right next to it', () => {
+    const m = parseMap(def(['.....'], { npcs: [{ id: 'gold-kid', x: 3, y: 0 }] }));
+    expect(findPath(m, { x: 0, y: 0 }, { x: 3, y: 0 }).at(-1)).toEqual({ x: 2, y: 0 });
+  });
+
+  it('rejects an NPC on a blocked tile, a warp, the home door, or another NPC', () => {
+    const warps = [{ x: 0, y: 0, to: 'town', toX: 1, toY: 1 }];
+    expect(() => parseMap(def(['.T'], { npcs: [{ id: 'a', x: 1, y: 0 }] }))).toThrow(/NPC "a".*walkable/);
+    expect(() => parseMap(def(['..'], { warps, npcs: [{ id: 'a', x: 0, y: 0 }] }))).toThrow(/NPC "a".*exit/);
+    expect(() => parseMap(def(['D.'], { home: { x: 0, y: 0 }, npcs: [{ id: 'a', x: 0, y: 0 }] }))).toThrow(/NPC "a".*door/);
+    expect(() => parseMap(def(['..'], { npcs: [{ id: 'a', x: 1, y: 0 }, { id: 'b', x: 1, y: 0 }] }))).toThrow(/NPC "b"/);
   });
 });
 
@@ -162,5 +193,43 @@ describe('game maps', () => {
     for (const id of ['route', 'pond']) {
       expect(MAPS[id].rows.join('')).toContain('"');
     }
+  });
+});
+
+describe('the Gold Kid in town', () => {
+  /** Every tile you can walk to from `from`, including exits. */
+  function reachable(m: GameMap, from: Point): Set<string> {
+    const seen = new Set([`${from.x},${from.y}`]);
+    const queue = [from];
+    for (let i = 0; i < queue.length; i++) {
+      const { x, y } = queue[i];
+      for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) {
+        const k = `${x + dx},${y + dy}`;
+        if (m.isWalkable(x + dx, y + dy) && !seen.has(k)) {
+          seen.add(k);
+          queue.push({ x: x + dx, y: y + dy });
+        }
+      }
+    }
+    return seen;
+  }
+
+  it('stands in town, away from the start spot, with a spot next to it to talk from', () => {
+    const town = parseMap(MAPS.town);
+    const npc = MAPS.town.npcs?.find((n) => n.id === 'gold-kid');
+    expect(npc).toBeDefined();
+    expect(town.isWalkable(npc!.x, npc!.y)).toBe(false);
+    expect(npc).not.toMatchObject({ x: START.x, y: START.y });
+    const fromStart = reachable(town, START);
+    const talkSpots = [[0, -1], [1, 0], [0, 1], [-1, 0]].filter(([dx, dy]) => fromStart.has(`${npc!.x + dx},${npc!.y + dy}`));
+    expect(talkSpots.length).toBeGreaterThan(0);
+  });
+
+  it('does not cut off any part of town', () => {
+    const withNpc = reachable(parseMap(MAPS.town), START);
+    const without = reachable(parseMap({ ...MAPS.town, npcs: [] }), START);
+    const npc = MAPS.town.npcs!.find((n) => n.id === 'gold-kid')!;
+    without.delete(`${npc.x},${npc.y}`);
+    expect(withNpc).toEqual(without);
   });
 });

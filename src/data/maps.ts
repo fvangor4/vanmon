@@ -31,6 +31,8 @@ export const MAPS: Record<string, MapDef> = {
       { x: 9, y: 0, to: 'route', toX: 11, toY: 16 },
       { x: 10, y: 0, to: 'route', toX: 12, toY: 16 },
     ],
+    // Just right of home, off the path north to the route.
+    npcs: [{ id: 'gold-kid', x: 12, y: 4 }],
   },
   route: {
     id: 'route',

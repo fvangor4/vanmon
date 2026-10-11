@@ -38,6 +38,11 @@ export interface Warp extends Point {
   toY: number;
 }
 
+/** Someone standing on the map (see src/logic/npcs.ts). Nobody can walk onto their tile. */
+export interface NpcSpot extends Point {
+  id: string;
+}
+
 export interface MapDef {
   id: string;
   name: string;
@@ -45,6 +50,7 @@ export interface MapDef {
   warps: Warp[];
   /** The home door: stepping on it heals the party. */
   home?: Point;
+  npcs?: NpcSpot[];
 }
 
 export interface GameMap {
@@ -54,6 +60,9 @@ export interface GameMap {
   tileAt(x: number, y: number): TileKind | undefined;
   isWalkable(x: number, y: number): boolean;
   warpAt(x: number, y: number): Warp | undefined;
+  npcAt(x: number, y: number): NpcSpot | undefined;
+  /** An NPC directly up, down, left or right of (x, y). */
+  npcNextTo(x: number, y: number): NpcSpot | undefined;
 }
 
 export function parseMap(def: MapDef): GameMap {
@@ -73,22 +82,34 @@ export function parseMap(def: MapDef): GameMap {
   });
 
   const tileAt = (x: number, y: number) => tiles[y]?.[x];
-  const isWalkable = (x: number, y: number) => {
+  const isOpenGround = (x: number, y: number) => {
     const t = tileAt(x, y);
     return t !== undefined && WALKABLE.has(t);
   };
+  const warpAt = (x: number, y: number) => def.warps.find((w) => w.x === x && w.y === y);
+  const npcs = def.npcs ?? [];
+  const npcAt = (x: number, y: number) => npcs.find((n) => n.x === x && n.y === y);
 
   for (const w of def.warps) {
-    if (!isWalkable(w.x, w.y)) throw new Error(`map ${def.id}: warp at (${w.x}, ${w.y}) is not on a walkable tile`);
+    if (!isOpenGround(w.x, w.y)) throw new Error(`map ${def.id}: warp at (${w.x}, ${w.y}) is not on a walkable tile`);
   }
+  npcs.forEach((n, i) => {
+    const at = `map ${def.id}: NPC "${n.id}" at (${n.x}, ${n.y})`;
+    if (!isOpenGround(n.x, n.y)) throw new Error(`${at} is not on a walkable tile`);
+    if (warpAt(n.x, n.y)) throw new Error(`${at} is standing on an exit`);
+    if (def.home && def.home.x === n.x && def.home.y === n.y) throw new Error(`${at} is blocking the home door`);
+    if (npcs.findIndex((o) => o.x === n.x && o.y === n.y) !== i) throw new Error(`${at} is on top of another NPC`);
+  });
 
   return {
     def,
     width,
     height,
     tileAt,
-    isWalkable,
-    warpAt: (x, y) => def.warps.find((w) => w.x === x && w.y === y),
+    isWalkable: (x, y) => isOpenGround(x, y) && !npcAt(x, y),
+    warpAt,
+    npcAt,
+    npcNextTo: (x, y) => STEPS.map((s) => npcAt(x + s.x, y + s.y)).find((n) => n !== undefined),
   };
 }
 
