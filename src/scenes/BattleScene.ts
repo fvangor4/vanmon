@@ -90,6 +90,10 @@ class HpCard extends Phaser.GameObjects.Container {
     if (this.label.width > room) this.label.setScale(room / this.label.width);
   }
 
+  setXp(fraction: number): void {
+    this.drawXp(fraction);
+  }
+
   fillXp(from: number, to: number): Promise<void> {
     const bar = { v: from };
     this.drawXp(from);
@@ -301,8 +305,7 @@ export class BattleScene extends Phaser.Scene {
         // Only a win earns XP; the fighter's party slot is the same in the saved game.
         const xp = state.outcome === 'won' ? { before: fighter, after: session().state.party[state.activeIndex] } : null;
         await this.celebrate(xp, result.wentToBox, result.prize);
-      }
-      else this.showMainMenu();
+      } else this.showMainMenu();
     } catch (err) {
       // Never leave a child stuck on a screen with no buttons.
       console.error('VanMon battle error', err);
@@ -408,7 +411,9 @@ export class BattleScene extends Phaser.Scene {
     const steps = xpFillSteps(before, after);
     for (const [i, step] of steps.entries()) {
       if (i > 0) {
+        // The new level starts the bar over while its message is up.
         this.playerCard.setLevel(step.level);
+        this.playerCard.setXp(step.from);
         const { scaleX, scaleY } = this.playerSprite;
         this.tweens.add({ targets: this.playerSprite, scaleX: scaleX * 1.15, scaleY: scaleY * 1.15, yoyo: true, duration: 250, repeat: 1 });
         await this.say(levelUpText(name, step.level), true);
@@ -416,6 +421,7 @@ export class BattleScene extends Phaser.Scene {
       await this.playerCard.fillXp(step.from, step.to);
     }
     // Catch the HP bar up with the new max HP.
+    await this.playerCard.animateTo(after.hp, after.maxHp);
     this.playerCard.show(session().speciesById(after.speciesId), after);
   }
 
