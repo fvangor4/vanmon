@@ -1,5 +1,5 @@
 ---
-status: approved
+status: done
 base: 64a3c77
 rigor:
   tests: tdd
@@ -181,10 +181,10 @@ rigor:
 - [x] 17. PWA: manifest, icons, Apple meta tags, offline service worker, rotate prompt.
       files: vite.config.ts, index.html, public/icons/*, src/ui/rotatePrompt.ts
       commits: [6c1f88f, 9968a1e]
-- [~] 18. Deploy: GitHub Actions → Pages, remote + push, README,
+- [x] 18. Deploy: GitHub Actions → Pages, remote + push, README,
       docs/ADDING_CREATURES.md.
       files: .github/workflows/deploy.yml, README.md, docs/ADDING_CREATURES.md
-      commits: [4b09dc6]
+      commits: [4b09dc6, edf7fea]
 
 ## Log
 - 2026-10-09: draft created; all open questions answered; tasks proposed.
@@ -240,3 +240,5 @@ rigor:
 - task 17 code review: no tests on the build output (scripts/check-dist.mjs now runs after vite build: manifest start_url/scope, icons exist, index/creatures.json/every creature image precached; tested by injecting a 9 MB IMG.PNG, which fails the build with a clear message from vite-plugin-pwa); autoUpdate claimed the page silently and never re-checked (registerType prompt + src/pwa.ts: check on launch and on visibilitychange, switch at the title screen only); >4 MB art (limit 8 MB, build fails above it); uppercase .JPG only matched on macOS (pattern lists both cases); safe areas ignored with black-translucent (#game inset by env(safe-area-inset-*)); portrait media query fires in landscape Split View (src/ui/rotatePrompt.ts uses screen.orientation, +2 tests); Safari vs Home Screen storage are separate (→ README tells parents to install first); includeAssets duplicates and maskable reuse removed. Fixed 9968a1e. Done.
 - task 18 reviews: spec — #2 open until the live deploy; extra test files accepted; menus test renamed. code — renaming/removing ids silently drops caught creatures (doc warning); doc said `npm test` but CI gate is `npm run build` (doc updated, + `npm install`); no failed-deploy guidance (added); one-time setup undocumented (repo name + Pages source in workflow header and README); cancel-in-progress could interrupt a deploy (false); base path unchecked (check-dist asserts /vanmon/ asset URLs); Node engines (>=24). Fixed edf7fea.
 - ship gate: `npm run build` green (204 tests, check-dist ok); `git diff 64a3c77..HEAD` contains only planned game code, tests, assets, docs. Push to github.com/fvangor4/vanmon REFUSED: the gh OAuth token lacks the `workflow` scope needed to push .github/workflows/deploy.yml. Waiting on the user to grant it (`gh auth refresh -h github.com -s workflow`). Commits carry author "W Franklin <wfranklin@Ws-MacBook-Pro.local>" (no git user.email configured), flagged to the user before the first public push.
+- ship gate (continued): the user granted the `workflow` scope and asked for commit author email fvangor4@gmail.com, so all 66 local commits were rewritten before the first push (filter-branch, nothing public yet). Pushed to github.com/fvangor4/vanmon, enabled Pages (source: GitHub Actions). Deploy run 38106557869: build ✓ (tests + check-dist), deploy ✓. Live https://fvangor4.github.io/vanmon/: title screen renders, SW active with 15 files precached, no console errors, no dev hook. Done-when #2 satisfied. Still open for the user on a real iPad: audible voice (#5), Add to Home Screen full-screen + icon (#10), status-bar overlap.
+- complete. Next wanted (out of scope here): in-game "Creature Lab" drawing studio (phase 2).

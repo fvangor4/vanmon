@@ -1,5 +1,5 @@
 ---
-status: approved
+status: done
 base: 17048f4
 rigor:
   tests: test-after
@@ -114,22 +114,23 @@ rigor:
   pass before and after, so a red-first cycle isn't possible. The human decides at approval.
 
 ## Tasks
-- [~] 1. Draw the three creature pictures in the house style (256×256 viewBox,
+- [x] 1. Draw the three creature pictures in the house style (256×256 viewBox,
       transparent, darker same-family outlines, the shared face group). Check each one
       renders in the browser at 340 px before moving on. Nothing references them yet,
       so the build stays green.
       files: public/creatures/zoomhog.svg, public/creatures/twintail.svg, public/creatures/shadehog.svg
       commits: [7dfb203]
-- [~] 2. Append the six moves and three species to creatures.json, per the
+- [x] 2. Append the six moves and three species to creatures.json, per the
       tables in Intent (additions only, after the existing entries). Add a test
       that the shipped data's starters are still emberpup, puddlefin and sproutle.
       Then check in the preview: Book paging, and one wild battle with each new creature.
       files: public/data/creatures.json, src/logic/starters.test.ts
       commits: [96b7ccb]
-- [~] 3. Docs: add the six new moves to "Moves you can use today" in
+- [x] 3. Docs: add the six new moves to "Moves you can use today" in
       ADDING_CREATURES, and say new creatures go at the end of the list
       (so the starters don't change).
       files: docs/ADDING_CREATURES.md
+      commits: [bb337eb]
 
 ## Log
 - 2026-10-11: work file created (draft). Started after the drawing-screen plan was archived (17048f4).
@@ -144,3 +145,5 @@ rigor:
   - `speciesForArea`: route has 7 species incl. all three new ones; pond has 4 incl. Zoomhog.
   - Book detail view of a new creature not seen, since they're unseen in this save; the art was checked at 340 px in task 1.
 - task 3: implemented. Added the six moves to the guide's move list, and a note to add new creatures at the end of the species list.
+- review (end, code): pass, no findings.
+- ship gate: `npm run build` passes (19 files, 231 tests; check-dist ok, 18 files offline). The whole diff touches only the files the tasks name, plus this work file.
