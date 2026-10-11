@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createCreature, statsAtLevel, type SpeciesDef } from './creatures';
-import { gainXp, LEVEL_CAP, xpForWin, xpFraction, xpToNextLevel } from './xp';
+import { gainXp, LEVEL_CAP, xpFillSteps, xpForWin, xpFraction, xpToNextLevel } from './xp';
 
 const species: SpeciesDef = {
   id: 'firey', name: 'Firey', type: 'fire', image: 'f.svg',
@@ -119,5 +119,44 @@ describe('xpFraction (how full the EXP bar is)', () => {
   it('never spills past the ends for odd saved values', () => {
     expect(xpFraction(5, 999)).toBe(1);
     expect(xpFraction(5, -4)).toBe(0);
+  });
+});
+
+describe('xpFillSteps (the EXP bar filling after a win)', () => {
+  it('fills once within the same level', () => {
+    expect(xpFillSteps({ level: 5, xp: 10 }, { level: 5, xp: 30 })).toEqual([{ level: 5, from: 0.2, to: 0.6 }]);
+  });
+
+  it('fills to the end, then refills from empty at the new level', () => {
+    expect(xpFillSteps({ level: 5, xp: 30 }, { level: 6, xp: 15 })).toEqual([
+      { level: 5, from: 0.6, to: 1 },
+      { level: 6, from: 0, to: 0.25 },
+    ]);
+  });
+
+  it('runs through every level gained at once', () => {
+    expect(xpFillSteps({ level: 5, xp: 40 }, { level: 7, xp: 0 })).toEqual([
+      { level: 5, from: 0.8, to: 1 },
+      { level: 6, from: 0, to: 1 },
+      { level: 7, from: 0, to: 0 },
+    ]);
+  });
+
+  it('ends full on reaching the cap', () => {
+    expect(xpFillSteps({ level: LEVEL_CAP - 1, xp: 95 }, { level: LEVEL_CAP, xp: 0 })).toEqual([
+      { level: LEVEL_CAP - 1, from: 0.5, to: 1 },
+      { level: LEVEL_CAP, from: 1, to: 1 },
+    ]);
+  });
+
+  it('stays full when already at the cap', () => {
+    expect(xpFillSteps({ level: LEVEL_CAP, xp: 0 }, { level: LEVEL_CAP, xp: 0 })).toEqual([{ level: LEVEL_CAP, from: 1, to: 1 }]);
+  });
+
+  it('gives one step per level, matching what gainXp reports', () => {
+    const c = createCreature(species, 3);
+    const { creature, levelUps } = gainXp(c, 200, species);
+    const steps = xpFillSteps(c, creature);
+    expect(steps.slice(1).map((s) => s.level)).toEqual(levelUps);
   });
 });

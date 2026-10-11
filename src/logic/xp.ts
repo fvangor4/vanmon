@@ -16,6 +16,28 @@ export function xpFraction(level: number, xp: number): number {
   return Math.min(1, Math.max(0, xp / xpToNextLevel(level)));
 }
 
+export interface XpFillStep {
+  /** The level shown while this part of the bar fills. */
+  level: number;
+  from: number;
+  to: number;
+}
+
+/**
+ * How the EXP bar fills from before a win to after it: one step per level,
+ * each new level starting from empty (or full, at the cap).
+ */
+export function xpFillSteps(before: { level: number; xp: number }, after: { level: number; xp: number }): XpFillStep[] {
+  const steps: XpFillStep[] = [];
+  let from = xpFraction(before.level, before.xp);
+  for (let level = before.level; level < after.level; level++) {
+    steps.push({ level, from, to: 1 });
+    from = xpFraction(level + 1, 0);
+  }
+  steps.push({ level: Math.max(before.level, after.level), from, to: xpFraction(after.level, after.xp) });
+  return steps;
+}
+
 export function xpForWin(wildLevel: number): number {
   return 10 + wildLevel * 4;
 }

@@ -9,7 +9,7 @@ import type { Creature, CreatureType } from '../logic/creatures';
 import { moveHint } from '../logic/damage';
 import { applyBattleOutcome, PARTY_MAX, type OutcomeResult } from '../logic/gameState';
 import { NPCS, type NpcDef } from '../logic/npcs';
-import { xpFraction } from '../logic/xp';
+import { xpFillSteps, xpFraction } from '../logic/xp';
 import { creatureTexture, session } from '../session';
 import { BigButton, COLORS, FONT, type ButtonBadge } from '../ui/Button';
 import { DialogBox } from '../ui/DialogBox';
@@ -47,6 +47,7 @@ class HpCard extends Phaser.GameObjects.Container {
   /** Only on the player's card. */
   private xpBar?: Phaser.GameObjects.Graphics;
   private shown = 1;
+  private creatureName = '';
 
   constructor(scene: Phaser.Scene, x: number, y: number, withXp = false) {
     super(scene, x, y);
@@ -71,16 +72,36 @@ class HpCard extends Phaser.GameObjects.Container {
 
   show(species: { name: string; type: CreatureType }, c: Creature): void {
     this.typeTag.setText(typeLabel(species.type)).setColor(hex(COLORS[species.type]));
-    this.label.setText(`${species.name}  Lv ${c.level}`);
+    this.creatureName = species.name;
+    this.setLevel(c.level);
+    this.drawXp(xpFraction(c.level, c.xp));
+    this.shown = c.hp / c.maxHp;
+    this.drawBar(this.shown);
+  }
+
+  /** Updates just the "Lv" in the label, e.g. mid-way through an EXP fill. */
+  setLevel(level: number): void {
+    this.label.setText(`${this.creatureName}  Lv ${level}`);
     // Long kid-made names shrink to fit beside the type tag.
     const room = CARD_W - CARD_PAD * 2 - this.typeTag.width - 10;
     let size = NAME_FONT_MAX;
     this.label.setFontSize(size).setScale(1);
     while (this.label.width > room && size > NAME_FONT_MIN) this.label.setFontSize(--size);
     if (this.label.width > room) this.label.setScale(room / this.label.width);
-    this.drawXp(xpFraction(c.level, c.xp));
-    this.shown = c.hp / c.maxHp;
-    this.drawBar(this.shown);
+  }
+
+  fillXp(from: number, to: number): Promise<void> {
+    const bar = { v: from };
+    this.drawXp(from);
+    return new Promise((resolve) => {
+      this.scene.tweens.add({
+        targets: bar,
+        v: to,
+        duration: Math.max(200, 900 * Math.abs(to - from)),
+        onUpdate: () => this.drawXp(bar.v),
+        onComplete: () => resolve(),
+      });
+    });
   }
 
   animateTo(hp: number, maxHp: number): Promise<void> {
@@ -268,6 +289,7 @@ export class BattleScene extends Phaser.Scene {
       const { state, events } = takeTurn(this.battle, action, makeBattleContext(s.data, s.rng));
       // Save a finished battle's result before the animations, so closing the
       // iPad mid-celebration never loses a catch or a level-up.
+      const fighter = state.party[state.activeIndex];
       const result = state.outcome ? this.saveOutcome(state) : null;
       const before = this.battle;
       for (const e of events) {
@@ -275,7 +297,11 @@ export class BattleScene extends Phaser.Scene {
         await this.play(e, before);
       }
       this.battle = state;
-      if (result) await this.celebrate(result.levelUps, result.wentToBox, result.prize);
+      if (result) {
+        // Only a win earns XP; the fighter's party slot is the same in the saved game.
+        const xp = state.outcome === 'won' ? { before: fighter, after: session().state.party[state.activeIndex] } : null;
+        await this.celebrate(xp, result.wentToBox, result.prize);
+      }
       else this.showMainMenu();
     } catch (err) {
       // Never leave a child stuck on a screen with no buttons.
@@ -285,14 +311,14 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  private saveOutcome(state: BattleState): { levelUps: number[]; wentToBox: boolean; prize: OutcomeResult['prize'] } {
+  private saveOutcome(state: BattleState): { wentToBox: boolean; prize: OutcomeResult['prize'] } {
     const s = session();
     const prev = s.state;
-    const { state: next, levelUps, prize } = applyBattleOutcome(prev, state, s.data);
+    const { state: next, prize } = applyBattleOutcome(prev, state, s.data);
     s.state = next;
     s.stepsSinceBattle = 0;
     s.save();
-    return { levelUps, wentToBox: state.outcome === 'caught' && prev.party.length >= PARTY_MAX, prize };
+    return { wentToBox: state.outcome === 'caught' && prev.party.length >= PARTY_MAX, prize };
   }
 
   private async play(e: BattleEvent, before: BattleState): Promise<void> {
@@ -369,17 +395,28 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  private async celebrate(levelUps: number[], wentToBox: boolean, prize: OutcomeResult['prize']): Promise<void> {
+  private async celebrate(xp: { before: Creature; after: Creature } | null, wentToBox: boolean, prize: OutcomeResult['prize']): Promise<void> {
     const n = this.names();
     if (wentToBox) await this.say(boxText(n.wild), true);
-    if (levelUps.length > 0) {
-      const grown = session().state.party[this.battle.activeIndex];
-      this.playerCard.show(session().speciesById(grown.speciesId), grown);
-      this.tweens.add({ targets: this.playerSprite, scaleX: this.playerSprite.scaleX * 1.15, scaleY: this.playerSprite.scaleY * 1.15, yoyo: true, duration: 250, repeat: 1 });
-    }
-    for (const level of levelUps) await this.say(levelUpText(n.player(this.battle.activeIndex), level), true);
+    if (xp) await this.fillXp(xp.before, xp.after, n.player(this.battle.activeIndex));
     if (prize && this.npc) await this.givePrize(prize.creature, prize.where);
     this.leave();
+  }
+
+  /** The EXP bar fills up; each time it reaches the end, the creature grows a level. */
+  private async fillXp(before: Creature, after: Creature, name: string): Promise<void> {
+    const steps = xpFillSteps(before, after);
+    for (const [i, step] of steps.entries()) {
+      if (i > 0) {
+        this.playerCard.setLevel(step.level);
+        const { scaleX, scaleY } = this.playerSprite;
+        this.tweens.add({ targets: this.playerSprite, scaleX: scaleX * 1.15, scaleY: scaleY * 1.15, yoyo: true, duration: 250, repeat: 1 });
+        await this.say(levelUpText(name, step.level), true);
+      }
+      await this.playerCard.fillXp(step.from, step.to);
+    }
+    // Catch the HP bar up with the new max HP.
+    this.playerCard.show(session().speciesById(after.speciesId), after);
   }
 
   /** The NPC's creature hops back in, sparkling, as a gift. */
