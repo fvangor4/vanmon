@@ -126,10 +126,11 @@ rigor:
       with `HoldButton` clears the canvas and the stored drawing.
       files: src/scenes/DrawScene.ts
       commits: [683d1af, 5ba8448]
-- [~] 7. Type picker (🔥/💧/🍃, tap again to unset, stored), and the "Done!" clean
+- [x] 7. Type picker (🔥/💧/🍃, tap again to unset, stored), and the "Done!" clean
       view: only the drawing and type, with the spoken and fading screenshot hint. Tap
       anywhere to return. 🔊 on the drawing screen reads its instructions.
       files: src/scenes/DrawScene.ts
+      commits: [808e180, 8ce575e]
 - [ ] 8. Docs: a 🎨 line in README "How to play". ADDING_CREATURES gets a
       "from an in-game drawing (screenshot)" route.
       files: README.md, docs/ADDING_CREATURES.md
@@ -182,3 +183,11 @@ rigor:
   - 💧 is stored as type "water", and 🔊 speaks HELP.
   - Done! shows only the drawing plus 💧 and speaks the screenshot hint. The hint is gone after about 4 s, and a tap returns to the tools.
   - After a reload, the drawing and the 💧 ring are restored. No console errors.
+- task 7 review findings:
+  - Fixed in 8ce575e:
+    - Stale type after an unreadable drawing, and a type picked mid-load lost on error → `changedWhileRestoring` flag.
+    - onload rewrote storage on every launch → it now writes only if something changed (browser: 0 writes on open).
+    - Fade tween on the destroyed hint → removed on close.
+  - Accepted: hint wording ("...and the volume up button together") is the same meaning, clearer read aloud. A two-finger hold on Clear finishing under the Done! overlay is rare and harmless (it just clears).
+  - No scene tests, per the contract. Re-review pass.
+- Browser-test artifact: with the pane hidden and no frames between two synthetic clicks, a click meant for the overlay reached the canvas. This doesn't happen on a real device, where frames run between taps.
