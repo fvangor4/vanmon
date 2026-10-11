@@ -6,13 +6,15 @@ import { GAME_WIDTH } from '../config';
 import { createCreature, type Creature } from '../logic/creatures';
 import { rollEncounter, speciesForArea } from '../logic/encounters';
 import { healAll, markSeen } from '../logic/gameState';
-import { findPath, parseMap, type GameMap, type Point } from '../logic/map';
+import { findPath, parseMap, type GameMap, type NpcSpot, type Point } from '../logic/map';
+import { NPCS, npcGreeting } from '../logic/npcs';
 import { AREAS, MAPS } from '../data/maps';
 import { session } from '../session';
 import { BigButton, COLORS, FONT, pinToScreen } from '../ui/Button';
 import { DialogBox } from '../ui/DialogBox';
 import { openMenu } from './menuBase';
-import { PLAYER_TEXTURE, TILE, tileTexture } from './textures';
+import type { MathLaunch } from './MathScene';
+import { GOLD_KID_TEXTURE, PLAYER_TEXTURE, TILE, tileTexture } from './textures';
 
 const STEP_MS = 160;
 
@@ -34,6 +36,8 @@ export class OverworldScene extends Phaser.Scene {
   private busy = false;
   /** A menu tapped mid-step opens once the step finishes. */
   private pendingMenu: string | null = null;
+  /** An NPC tapped from afar: talk once the walk ends next to it. */
+  private pendingTalk: NpcSpot | null = null;
 
   constructor() {
     super('Overworld');
@@ -47,7 +51,9 @@ export class OverworldScene extends Phaser.Scene {
     this.walking = false;
     this.busy = false;
     this.pendingMenu = null;
+    this.pendingTalk = null;
     this.drawMap();
+    this.drawNpcs();
     // Menus pause this scene; it is ready for taps again when they close.
     this.events.on(Phaser.Scenes.Events.RESUME, () => (this.busy = false));
 
@@ -64,7 +70,14 @@ export class OverworldScene extends Phaser.Scene {
 
     this.input.on(Phaser.Input.Events.POINTER_UP, (p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
       if (this.busy || over.length > 0) return; // taps on buttons/dialogs aren't walking
-      this.walkTo({ x: Math.floor(p.worldX / TILE), y: Math.floor(p.worldY / TILE) });
+      const tapped = { x: Math.floor(p.worldX / TILE), y: Math.floor(p.worldY / TILE) };
+      const npc = this.map.npcAt(tapped.x, tapped.y);
+      if (npc) {
+        this.approach(npc);
+        return;
+      }
+      this.pendingTalk = null;
+      this.walkTo(tapped);
     });
   }
 
@@ -75,6 +88,17 @@ export class OverworldScene extends Phaser.Scene {
         const isRoof = kind === 'house' && this.map.tileAt(x, y - 1) !== 'house';
         this.add.image(x * TILE + TILE / 2, y * TILE + TILE / 2, tileTexture(isRoof ? 'roof' : kind));
       }
+    }
+  }
+
+  /** NPCs stand on their tiles with a bobbing speech bubble, so kids know to tap them. */
+  private drawNpcs(): void {
+    for (const n of this.map.def.npcs ?? []) {
+      const cx = n.x * TILE + TILE / 2;
+      const cy = n.y * TILE + TILE / 2;
+      this.add.image(cx, cy, GOLD_KID_TEXTURE).setDepth(9);
+      const bubble = this.add.text(cx + 18, cy - 44, '💬', { fontFamily: FONT, fontSize: '28px' }).setOrigin(0.5).setDepth(11);
+      this.tweens.add({ targets: bubble, y: cy - 52, yoyo: true, repeat: -1, duration: 600, ease: 'Sine.InOut' });
     }
   }
 
@@ -139,6 +163,9 @@ export class OverworldScene extends Phaser.Scene {
       if (!this.busy) session().save(); // stopped walking: remember where we are
       if (this.pendingMenu && !this.busy) this.openMenuNow(this.pendingMenu);
       else this.pendingMenu = null;
+      const talk = this.pendingTalk;
+      this.pendingTalk = null;
+      if (talk && !this.busy && this.isNextTo(talk)) void this.talk(talk);
       return;
     }
     this.walking = true;
@@ -212,6 +239,41 @@ export class OverworldScene extends Phaser.Scene {
 
   private stop(): void {
     this.path = [];
+  }
+
+  private isNextTo(npc: NpcSpot): boolean {
+    const { x, y } = session().state.position;
+    return this.map.npcNextTo(x, y)?.id === npc.id;
+  }
+
+  /** Tapped an NPC: talk now if right next to it, otherwise walk over first. */
+  private approach(npc: NpcSpot): void {
+    this.pendingTalk = npc;
+    if (this.walking) {
+      this.walkTo(npc); // the walk's end picks up pendingTalk
+      return;
+    }
+    if (this.isNextTo(npc)) {
+      this.pendingTalk = null;
+      void this.talk(npc);
+      return;
+    }
+    this.walkTo(npc);
+    if (!this.walking) this.pendingTalk = null; // can't get there
+  }
+
+  private async talk(spot: NpcSpot): Promise<void> {
+    if (!Object.hasOwn(NPCS, spot.id)) return;
+    const npc = NPCS[spot.id];
+    this.stop();
+    this.busy = true;
+    const pos = session().state.position;
+    if (spot.x !== pos.x) this.player.setFlipX(spot.x < pos.x);
+    await this.dialog.show(npcGreeting(npc, session().state.npcsBeaten.includes(npc.id)), { speak: true });
+    this.dialog.hide();
+    const launch: MathLaunch = { npc: npc.id };
+    this.cameras.main.fadeOut(250);
+    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.start('Math', launch));
   }
 
   private async say(text: string): Promise<void> {

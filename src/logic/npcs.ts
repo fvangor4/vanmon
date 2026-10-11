@@ -22,3 +22,11 @@ export function npcCreature(npc: NpcDef, state: GameState, data: CreatureData): 
   if (!species) throw new Error(`${npc.name}'s creature "${npc.speciesId}" is not in creatures.json`);
   return createCreature(species, state.party[0].level);
 }
+
+/** What the NPC says when you walk up and talk to it (read aloud). */
+export function npcGreeting(npc: NpcDef, beatenBefore: boolean): string {
+  const name = npc.name.replace(/^The /, 'the ');
+  return beatenBefore
+    ? "Hi again! ✨ Rematch? Answer three new math questions, then let's battle!"
+    : `Hi! I'm ${name}! ✨ Answer my three math questions, then let's battle!`;
+}

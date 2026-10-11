@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createCreature, validateCreatureData, type CreatureData } from './creatures';
 import { newGame } from './gameState';
-import { GOLD_KID, NPCS, npcCreature } from './npcs';
+import { GOLD_KID, NPCS, npcCreature, npcGreeting } from './npcs';
 import shipped from '../../public/data/creatures.json';
 
 const data: CreatureData = {
@@ -40,5 +40,12 @@ describe('npcCreature', () => {
   it('refuses an NPC whose creature is missing from creatures.json', () => {
     const g = newGame(createCreature(firey, 5));
     expect(() => npcCreature(GOLD_KID, g, { ...data, species: [firey] })).toThrow(/super-shadehog/);
+  });
+});
+
+describe('npcGreeting', () => {
+  it('invites a first math-and-battle, and a rematch once beaten', () => {
+    expect(npcGreeting(GOLD_KID, false)).toBe("Hi! I'm the Gold Kid! ✨ Answer my three math questions, then let's battle!");
+    expect(npcGreeting(GOLD_KID, true)).toBe("Hi again! ✨ Rematch? Answer three new math questions, then let's battle!");
   });
 });
