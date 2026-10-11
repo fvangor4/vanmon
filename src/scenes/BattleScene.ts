@@ -4,9 +4,10 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config';
 import { makeBattleContext, startBattle, takeTurn, type BattleAction, type BattleEvent, type BattleState } from '../logic/battle';
-import { battleText, boxText, levelUpText, TYPE_ICON, type BattleNames } from '../logic/battleText';
+import { battleText, boxText, levelUpText, npcIntroText, prizeText, TYPE_ICON, type BattleNames } from '../logic/battleText';
 import type { Creature } from '../logic/creatures';
-import { applyBattleOutcome, PARTY_MAX } from '../logic/gameState';
+import { applyBattleOutcome, PARTY_MAX, type OutcomeResult } from '../logic/gameState';
+import { NPCS, type NpcDef } from '../logic/npcs';
 import { creatureTexture, session } from '../session';
 import { BigButton, COLORS, FONT } from '../ui/Button';
 import { DialogBox } from '../ui/DialogBox';
@@ -77,13 +78,16 @@ export class BattleScene extends Phaser.Scene {
   private wildCard!: HpCard;
   private playerCard!: HpCard;
   private menu: Phaser.GameObjects.GameObject[] = [];
+  /** The NPC being battled, or undefined in a wild battle. */
+  private npc?: NpcDef;
 
   constructor() {
     super('Battle');
   }
 
   init(data: BattleLaunch): void {
-    this.battle = startBattle(session().state.party, data.wild);
+    this.npc = data.npc !== undefined && Object.hasOwn(NPCS, data.npc) ? NPCS[data.npc] : undefined;
+    this.battle = startBattle(session().state.party, data.wild, this.npc ? { npcId: this.npc.id } : {});
     this.menu = [];
   }
 
@@ -115,6 +119,7 @@ export class BattleScene extends Phaser.Scene {
       player: (i) => s.speciesById(this.battle.party[i].speciesId).name,
       active: this.battle.activeIndex,
       wild: s.speciesById(this.battle.wild.speciesId).name,
+      npc: this.npc?.name,
     };
   }
 
@@ -122,7 +127,7 @@ export class BattleScene extends Phaser.Scene {
     this.wildSprite.setX(GAME_WIDTH + 200);
     this.tweens.add({ targets: this.wildSprite, x: WILD_SPOT.x, duration: 600, ease: 'Back.Out' });
     const n = this.names();
-    await this.say(`A wild ${n.wild} appeared!`);
+    await this.say(this.npc ? npcIntroText(this.npc.name, n.wild) : `A wild ${n.wild} appeared!`);
     await this.say(`Go, ${n.player(n.active)}!`);
     this.showMainMenu();
   }
@@ -152,10 +157,13 @@ export class BattleScene extends Phaser.Scene {
     const canSwap = this.battle.party.some((c, i) => i !== this.battle.activeIndex && c.hp > 0);
     this.menu = [
       new BigButton(this, 270, y1, { icon: '⚔️', label: 'Fight', color: COLORS.fire, width: 420, height: 92, onTap: () => this.showMoveMenu() }),
-      new BigButton(this, 754, y1, { icon: '🎯', label: 'Catch', color: COLORS.sunny, width: 420, height: 92, onTap: () => void this.act({ kind: 'catch' }) }),
       new BigButton(this, 270, y2, { icon: '🔄', label: 'Swap', color: COLORS.sky, width: 420, height: 92, onTap: () => this.showSwapMenu() }).setEnabled(canSwap),
       new BigButton(this, 754, y2, { icon: '🏃', label: 'Run', color: COLORS.normal, width: 420, height: 92, onTap: () => void this.act({ kind: 'run' }) }),
     ];
+    // An NPC's creature can't be caught, so its battles have no Catch button.
+    if (!this.npc) {
+      this.menu.push(new BigButton(this, 754, y1, { icon: '🎯', label: 'Catch', color: COLORS.sunny, width: 420, height: 92, onTap: () => void this.act({ kind: 'catch' }) }));
+    }
   }
 
   private showMoveMenu(): void {
@@ -213,7 +221,7 @@ export class BattleScene extends Phaser.Scene {
         await this.play(e, before);
       }
       this.battle = state;
-      if (result) await this.celebrate(result.levelUps, result.wentToBox);
+      if (result) await this.celebrate(result.levelUps, result.wentToBox, result.prize);
       else this.showMainMenu();
     } catch (err) {
       // Never leave a child stuck on a screen with no buttons.
@@ -223,14 +231,14 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  private saveOutcome(state: BattleState): { levelUps: number[]; wentToBox: boolean } {
+  private saveOutcome(state: BattleState): { levelUps: number[]; wentToBox: boolean; prize: OutcomeResult['prize'] } {
     const s = session();
     const prev = s.state;
-    const { state: next, levelUps } = applyBattleOutcome(prev, state, s.data);
+    const { state: next, levelUps, prize } = applyBattleOutcome(prev, state, s.data);
     s.state = next;
     s.stepsSinceBattle = 0;
     s.save();
-    return { levelUps, wentToBox: state.outcome === 'caught' && prev.party.length >= PARTY_MAX };
+    return { levelUps, wentToBox: state.outcome === 'caught' && prev.party.length >= PARTY_MAX, prize };
   }
 
   private async play(e: BattleEvent, before: BattleState): Promise<void> {
@@ -307,7 +315,7 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  private async celebrate(levelUps: number[], wentToBox: boolean): Promise<void> {
+  private async celebrate(levelUps: number[], wentToBox: boolean, prize: OutcomeResult['prize']): Promise<void> {
     const n = this.names();
     if (wentToBox) await this.say(boxText(n.wild), true);
     if (levelUps.length > 0) {
@@ -316,7 +324,21 @@ export class BattleScene extends Phaser.Scene {
       this.tweens.add({ targets: this.playerSprite, scaleX: this.playerSprite.scaleX * 1.15, scaleY: this.playerSprite.scaleY * 1.15, yoyo: true, duration: 250, repeat: 1 });
     }
     for (const level of levelUps) await this.say(levelUpText(n.player(this.battle.activeIndex), level), true);
+    if (prize && this.npc) await this.givePrize(prize.creature, prize.where);
     this.leave();
+  }
+
+  /** The NPC's creature hops back in, sparkling, as a gift. */
+  private async givePrize(creature: Creature, where: 'party' | 'box'): Promise<void> {
+    const name = session().speciesById(creature.speciesId).name;
+    this.wildCard.show(name, creature);
+    this.wildSprite.setTexture(creatureTexture(creature.speciesId)).setDisplaySize(CREATURE_SIZE, CREATURE_SIZE).setPosition(WILD_SPOT.x, WILD_SPOT.y).setAlpha(0);
+    this.tweens.add({ targets: this.wildSprite, alpha: 1, duration: 400 });
+    this.tweens.add({ targets: this.wildSprite, y: WILD_SPOT.y - 30, yoyo: true, repeat: 2, duration: 220, ease: 'Sine.Out' });
+    this.add
+      .particles(WILD_SPOT.x, WILD_SPOT.y, BALL_TEXTURE, { speed: 220, scale: { start: 0.25, end: 0 }, tint: 0xffd23f, lifespan: 700, quantity: 16, emitting: false })
+      .explode(16);
+    await this.say(prizeText(this.npc!.name, name, where), true);
   }
 
   private leave(): void {

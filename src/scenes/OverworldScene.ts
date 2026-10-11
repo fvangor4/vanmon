@@ -17,7 +17,10 @@ import { PLAYER_TEXTURE, TILE, tileTexture } from './textures';
 const STEP_MS = 160;
 
 export interface BattleLaunch {
+  /** The creature to battle (an NPC's creature when `npc` is set). */
   wild: Creature;
+  /** NPC id (src/logic/npcs.ts) for an NPC battle: no catching, and a prize the first win. */
+  npc?: string;
 }
 
 export class OverworldScene extends Phaser.Scene {

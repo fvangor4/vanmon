@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { battleText, boxText, levelUpText, TYPE_ICON } from './battleText';
+import { battleText, boxText, levelUpText, npcIntroText, prizeText, TYPE_ICON } from './battleText';
 
 const names = { player: (i: number) => ['Emberpup', 'Puddlefin'][i], active: 0, wild: 'Leafbun' };
 
@@ -50,5 +50,29 @@ describe('other battle messages', () => {
   it('has an icon for every move type', () => {
     expect(Object.keys(TYPE_ICON).sort()).toEqual(['fire', 'leaf', 'normal', 'water']);
     for (const icon of Object.values(TYPE_ICON)) expect(icon.trim()).not.toBe('');
+  });
+});
+
+describe('battle text against an NPC', () => {
+  const vsGold = { ...names, wild: 'Super Shadehog', npc: 'The Gold Kid' };
+
+  it("calls the creature the NPC's, never wild", () => {
+    expect(battleText({ kind: 'move', side: 'wild', moveId: 'bump', moveName: 'Bump' }, vsGold)).toBe("The Gold Kid's Super Shadehog used Bump!");
+    expect(battleText({ kind: 'faint', side: 'wild' }, vsGold)).toBe("The Gold Kid's Super Shadehog is sleepy! 💤");
+    expect(battleText({ kind: 'move', side: 'player', moveId: 'spark', moveName: 'Spark' }, vsGold)).toBe('Emberpup used Spark!');
+  });
+
+  it('cheers a win over the NPC, and on a loss says to try again instead of going home', () => {
+    expect(battleText({ kind: 'won' }, vsGold)).toBe('You beat the Gold Kid! 🎉');
+    expect(battleText({ kind: 'lost' }, vsGold)).toBe('Time for a nap! 💤 Good try! Talk to the Gold Kid to try again.');
+    expect(battleText({ kind: 'lost' }, names)).toBe("Time for a nap! 💤 Let's go home and rest.");
+  });
+
+  it('introduces the NPC creature, and announces the prize (and where it went)', () => {
+    expect(npcIntroText('The Gold Kid', 'Super Shadehog')).toBe('The Gold Kid sends out Super Shadehog!');
+    expect(prizeText('The Gold Kid', 'Super Shadehog', 'party')).toBe('The Gold Kid gives you a Super Shadehog to keep! 🎁');
+    expect(prizeText('The Gold Kid', 'Super Shadehog', 'box')).toBe(
+      'The Gold Kid gives you a Super Shadehog to keep! 🎁 Your party is full, so it went to your Box at home. 📦',
+    );
   });
 });
