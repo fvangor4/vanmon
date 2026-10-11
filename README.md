@@ -27,7 +27,7 @@ title screen until the bar fills up. The old game is kept in a backup.
 - **Tall grass:** this is where wild creatures hide.
 - **Battles:** 🔥 beats 🍃, 🍃 beats 💧, 💧 beats 🔥. Use ⚔️ Fight, 🎯 Catch, 🔄 Swap or 🏃 Run.
 - **Getting tired:** if your creature gets sleepy, everyone goes home for a nap. Nothing is lost.
-- **✨ The Gold Kid** stands next to home in Home Town. Tap them to answer three
+- **✨ The Gold Kid** stands near home in Home Town. Tap them to answer three
   addition questions, then battle their Super Shadehog. Beat them once to win a
   Super Shadehog of your own (it never appears in the grass). Lose, and everyone is
   healed right there so you can try again.
