@@ -51,11 +51,12 @@ describe('speciesForArea', () => {
 
   it('keeps the kids\' pond creatures at the pond only, with Shiny Zoomhog rare', () => {
     const creatures = validateCreatureData(shipped);
-    const pond = speciesForArea(creatures, 'pond').map((s) => s.id);
-    const route = speciesForArea(creatures, 'route').map((s) => s.id);
     for (const id of ['shiny-zoomhog', 'xpeoon']) {
-      expect(pond, id).toContain(id);
-      expect(route, id).not.toContain(id);
+      for (const area of Object.keys(AREAS)) {
+        const ids = speciesForArea(creatures, area).map((s) => s.id);
+        if (area === 'pond') expect(ids, id).toContain(id);
+        else expect(ids, `${id} in ${area}`).not.toContain(id);
+      }
     }
     expect(creatures.species.find((s) => s.id === 'shiny-zoomhog')?.rare).toBe(true);
     expect(creatures.species.find((s) => s.id === 'xpeoon')?.rare).toBeUndefined();
