@@ -14,6 +14,9 @@ function memoryStore(initial: Record<string, string> = {}): KeyValueStore & { it
   };
 }
 
+/** A PNG data URL padded to exactly `length` characters. */
+const pngOfLength = (length: number) => PNG.padEnd(length, 'A');
+
 const throwing: KeyValueStore = {
   getItem: () => { throw new Error('SecurityError'); },
   setItem: () => { throw new Error('QuotaExceededError'); },
@@ -28,6 +31,14 @@ describe('drawing storage', () => {
 
     expect(saveDrawing(store, { type: null, png: PNG })).toBe(true);
     expect(loadDrawing(store)).toEqual({ type: null, png: PNG });
+  });
+
+  it('stores the drawing as { v: 1, type, png }', () => {
+    const store = memoryStore();
+    saveDrawing(store, { type: 'water', png: PNG });
+    expect(JSON.parse(store.items[DRAWING_KEY])).toEqual({ v: 1, type: 'water', png: PNG });
+    saveDrawing(store, { type: null, png: PNG });
+    expect(JSON.parse(store.items[DRAWING_KEY])).toEqual({ v: 1, type: null, png: PNG });
   });
 
   it('keeps only the latest drawing, under its own key, leaving the saved game alone', () => {
@@ -53,7 +64,7 @@ describe('drawing storage', () => {
       JSON.stringify({ v: 1, type: 'fire' }),
       JSON.stringify({ v: 1, type: 'fire', png: 42 }),
       JSON.stringify({ v: 1, type: 'fire', png: 'data:text/html;base64,PGgxPg==' }),
-      JSON.stringify({ v: 1, type: 'fire', png: 'x'.repeat(MAX_DRAWING_CHARS + 1) }),
+      JSON.stringify({ v: 1, type: 'fire', png: pngOfLength(MAX_DRAWING_CHARS + 1) }),
     ];
     for (const raw of bad) {
       expect(loadDrawing(memoryStore({ [DRAWING_KEY]: raw })), raw.slice(0, 60)).toBeNull();
@@ -67,9 +78,20 @@ describe('drawing storage', () => {
 
   it('refuses a drawing too big to store, so the saved game always has room', () => {
     const store = memoryStore();
-    const huge = 'data:image/png;base64,' + 'A'.repeat(MAX_DRAWING_CHARS);
-    expect(saveDrawing(store, { type: 'fire', png: huge })).toBe(false);
+    expect(saveDrawing(store, { type: 'fire', png: pngOfLength(MAX_DRAWING_CHARS + 1) })).toBe(false);
     expect(store.items).toEqual({});
+
+    const biggest = pngOfLength(MAX_DRAWING_CHARS);
+    expect(saveDrawing(store, { type: 'fire', png: biggest })).toBe(true);
+    expect(loadDrawing(store)?.png).toBe(biggest);
+  });
+
+  it('refuses a picture that is not a PNG, leaving the earlier drawing in place', () => {
+    const store = memoryStore();
+    saveDrawing(store, { type: 'fire', png: PNG });
+    // What Safari gives back for a canvas it can't export.
+    expect(saveDrawing(store, { type: 'leaf', png: 'data:,' })).toBe(false);
+    expect(loadDrawing(store)).toEqual({ type: 'fire', png: PNG });
   });
 
   it('reports failure instead of throwing when the iPad will not store anything', () => {
