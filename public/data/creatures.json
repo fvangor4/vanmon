@@ -8,7 +8,13 @@
     { "id": "splash-shot", "name": "Splash Shot", "type": "water", "power": 45 },
     { "id": "bubble-pop", "name": "Bubble Pop", "type": "water", "power": 50 },
     { "id": "leaf-toss", "name": "Leaf Toss", "type": "leaf", "power": 45 },
-    { "id": "vine-swing", "name": "Vine Swing", "type": "leaf", "power": 50 }
+    { "id": "vine-swing", "name": "Vine Swing", "type": "leaf", "power": 50 },
+    { "id": "zoom-roll", "name": "Zoom Roll", "type": "normal", "power": 35 },
+    { "id": "tail-whirl", "name": "Tail Whirl", "type": "normal", "power": 35 },
+    { "id": "night-dash", "name": "Night Dash", "type": "normal", "power": 35 },
+    { "id": "wave-dash", "name": "Wave Dash", "type": "water", "power": 45 },
+    { "id": "leaf-twister", "name": "Leaf Twister", "type": "leaf", "power": 45 },
+    { "id": "ember-skate", "name": "Ember Skate", "type": "fire", "power": 50 }
   ],
   "species": [
     {
@@ -63,6 +69,33 @@
       "image": "leafbun.svg",
       "baseStats": { "hp": 45, "attack": 55, "defense": 45 },
       "moves": ["swipe", "vine-swing"],
+      "areas": ["route"]
+    },
+    {
+      "id": "zoomhog",
+      "name": "Zoomhog",
+      "type": "water",
+      "image": "zoomhog.svg",
+      "baseStats": { "hp": 45, "attack": 60, "defense": 45 },
+      "moves": ["zoom-roll", "wave-dash"],
+      "areas": ["route", "pond"]
+    },
+    {
+      "id": "twintail",
+      "name": "Twintail",
+      "type": "leaf",
+      "image": "twintail.svg",
+      "baseStats": { "hp": 55, "attack": 45, "defense": 50 },
+      "moves": ["tail-whirl", "leaf-twister"],
+      "areas": ["route"]
+    },
+    {
+      "id": "shadehog",
+      "name": "Shadehog",
+      "type": "fire",
+      "image": "shadehog.svg",
+      "baseStats": { "hp": 50, "attack": 60, "defense": 40 },
+      "moves": ["night-dash", "ember-skate"],
       "areas": ["route"]
     }
   ]

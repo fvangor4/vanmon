@@ -119,7 +119,8 @@ rigor:
       renders in the browser at 340 px before moving on. Nothing references them yet,
       so the build stays green.
       files: public/creatures/zoomhog.svg, public/creatures/twintail.svg, public/creatures/shadehog.svg
-- [ ] 2. Append the six moves and three species to creatures.json, per the
+      commits: [7dfb203]
+- [~] 2. Append the six moves and three species to creatures.json, per the
       tables in Intent (additions only, after the existing entries). Add a test
       that the shipped data's starters are still emberpup, puddlefin and sproutle.
       Then check in the preview: Book paging, and one wild battle with each new creature.
@@ -134,3 +135,10 @@ rigor:
 - 2026-10-11: intent pinned with the user (names, types, rarity, moves). Recon answered all 4 unknowns.
 - 2026-10-11: approved by user ("looks good"), including the test-after contract.
 - task 1: implemented. Three SVGs (1.8–2.3 KB) with the shared face group unchanged. Checked in the browser at 340 px on the panel color and at 150 px on the dark game background; Twintail's tails were enlarged after the first look so they read as tails. Shadehog alone has angled brows for a cool look; the face group itself is identical. A temporary preview page in public/ was deleted, not committed.
+- task 2: implemented. Targeted tests: 4 files, 38 passed. A mutation check (moving a new species to the front of the list) makes the new starters test fail (1 failed). JSON diff is additions only, except that the old last move and last species lines each gained a comma.
+  Browser (shared dev server on :5173, run by another chat in this folder):
+  - title starters unchanged; the Book shows 6/9, with ◀️/▶️ going to page 2 (1 entry).
+  - wild battles started via `__game` for each new creature render their art; Zoomhog's turn hit back.
+  - real-module `calcDamage` gives sensible damage and effectiveness for all six moves against each type.
+  - `speciesForArea`: route has 7 species incl. all three new ones; pond has 4 incl. Zoomhog.
+  - Book detail view of a new creature not seen, since they're unseen in this save; the art was checked at 340 px in task 1.

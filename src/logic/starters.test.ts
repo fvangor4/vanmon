@@ -11,6 +11,11 @@ describe('pickStarters', () => {
     expect(pickStarters(mixed).map((s) => s.id)).toEqual(['f1', 'w1', 'l1']);
   });
 
+  // Starters are the first of each type in creatures.json, so new creatures must go at the end.
+  it('keeps the shipped starters as Emberpup, Puddlefin and Sproutle', () => {
+    expect(pickStarters(validateCreatureData(shipped)).map((s) => s.id)).toEqual(['emberpup', 'puddlefin', 'sproutle']);
+  });
+
   it('skips a type with no creatures', () => {
     const data = validateCreatureData(shipped);
     const noWater = { ...data, species: data.species.filter((s) => s.type !== 'water') };
