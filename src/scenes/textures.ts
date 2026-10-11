@@ -10,6 +10,8 @@ export function tileTexture(kind: TileKind | 'roof'): string {
 }
 
 export const PLAYER_TEXTURE = 'player';
+/** The Gold Kid NPC: the player sprite, all in gold. */
+export const GOLD_KID_TEXTURE = 'gold-kid';
 
 type Draw = (g: Phaser.GameObjects.Graphics) => void;
 
@@ -87,15 +89,34 @@ const DRAW: Record<TileKind | 'roof', Draw> = {
   },
 };
 
-function drawPlayer(g: Phaser.GameObjects.Graphics): void {
-  // A kid with a yellow cap, sized to one tile.
+interface KidColors {
+  shirt: number;
+  face: number;
+  cap: number;
+  eyes: number;
+  cheeks: number;
+}
+
+const PLAYER_COLORS: KidColors = { shirt: 0x3b8fe0, face: 0xffd9b3, cap: 0xffc83d, eyes: 0x222222, cheeks: 0xff8fa3 };
+const GOLD_COLORS: KidColors = { shirt: 0xd4a017, face: 0xffd54a, cap: 0xb8860b, eyes: 0x5a3a00, cheeks: 0xffe9a0 };
+
+function drawKid(g: Phaser.GameObjects.Graphics, c: KidColors): void {
+  // A kid with a cap, sized to one tile.
   g.fillStyle(0x000000, 0.2).fillEllipse(32, 60, 36, 10);
-  g.fillStyle(0x3b8fe0).fillRoundedRect(18, 34, 28, 24, 10); // shirt
-  g.fillStyle(0xffd9b3).fillCircle(32, 26, 15); // face
-  g.fillStyle(0xffc83d).fillRoundedRect(15, 8, 34, 14, 8); // cap
-  g.fillStyle(0xffc83d).fillRect(30, 16, 22, 6); // brim
-  g.fillStyle(0x222222).fillCircle(26, 28, 3).fillCircle(38, 28, 3); // eyes
-  g.fillStyle(0xff8fa3, 0.8).fillCircle(22, 33, 3).fillCircle(42, 33, 3); // cheeks
+  g.fillStyle(c.shirt).fillRoundedRect(18, 34, 28, 24, 10); // shirt
+  g.fillStyle(c.face).fillCircle(32, 26, 15); // face
+  g.fillStyle(c.cap).fillRoundedRect(15, 8, 34, 14, 8); // cap
+  g.fillStyle(c.cap).fillRect(30, 16, 22, 6); // brim
+  g.fillStyle(c.eyes).fillCircle(26, 28, 3).fillCircle(38, 28, 3); // eyes
+  g.fillStyle(c.cheeks, 0.8).fillCircle(22, 33, 3).fillCircle(42, 33, 3); // cheeks
+}
+
+function drawGoldKid(g: Phaser.GameObjects.Graphics): void {
+  drawKid(g, GOLD_COLORS);
+  // a little shine so it reads as gold, not just yellow
+  g.fillStyle(0xffffff, 0.75).fillCircle(22, 14, 2.5).fillCircle(24, 42, 2);
+  g.fillStyle(0xfff3b0).fillTriangle(54, 4, 56, 10, 52, 10).fillTriangle(54, 16, 56, 10, 52, 10);
+  g.fillStyle(0xfff3b0).fillTriangle(48, 10, 54, 8, 54, 12).fillTriangle(60, 10, 54, 8, 54, 12);
 }
 
 export function makeTextures(scene: Phaser.Scene): void {
@@ -109,8 +130,13 @@ export function makeTextures(scene: Phaser.Scene): void {
   }
   if (!scene.textures.exists(PLAYER_TEXTURE)) {
     g.clear();
-    drawPlayer(g);
+    drawKid(g, PLAYER_COLORS);
     g.generateTexture(PLAYER_TEXTURE, TILE, TILE);
+  }
+  if (!scene.textures.exists(GOLD_KID_TEXTURE)) {
+    g.clear();
+    drawGoldKid(g);
+    g.generateTexture(GOLD_KID_TEXTURE, TILE, TILE);
   }
   g.destroy();
 }
