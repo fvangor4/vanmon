@@ -11,6 +11,19 @@
       "port": 5173
     },
     {
+      "name": "vanmon-dev-alt",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5174",
+        "--strictPort"
+      ],
+      "port": 5174
+    },
+    {
       "name": "vanmon-preview",
       "runtimeExecutable": "npm",
       "runtimeArgs": [
