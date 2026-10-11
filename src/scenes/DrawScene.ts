@@ -40,6 +40,8 @@ const drawingStore = (): KeyValueStore => (store ??= browserStore());
  * close and reopen during the load.
  */
 let restoring = false;
+/** Bumped to cancel a restore still loading (Clear wins over a late-arriving old drawing). */
+let restoreId = 0;
 /** How the drawing looked before each stroke or fill. Kept in memory with the texture, never stored. */
 const history = new UndoHistory<ImageData>();
 
@@ -56,6 +58,8 @@ export class DrawScene extends MenuScene {
   /** The texture changed since the last frame (uploaded once per frame, not per finger move). */
   private dirty = false;
   private undoButton!: BigButton;
+  /** What the Undo button last showed, so it's only redrawn on a change (a redraw cancels a press). */
+  private undoShown: boolean | null = null;
 
   constructor() {
     super('Draw');
@@ -120,13 +124,16 @@ export class DrawScene extends MenuScene {
     const saved = loadDrawing(drawingStore());
     if (!saved) return;
     restoring = true;
+    const id = ++restoreId;
     const img = new Image();
     img.onload = () => {
+      if (id !== restoreId) return;
       restoring = false;
       this.ctx.drawImage(img, 0, 0, SIZE, SIZE);
       this.texture.refresh();
     };
     img.onerror = () => {
+      if (id !== restoreId) return;
       restoring = false;
       console.warn('VanMon: the kept drawing could not be shown; starting with blank paper');
     };
@@ -165,6 +172,7 @@ export class DrawScene extends MenuScene {
     const bucket = new BigButton(this, COLS[0], 440, { icon: '🪣', color: COLORS.sunny, width: SWATCH, height: SWATCH, onTap: () => { this.tool = 'fill'; ring(toolRing, bucket); } });
     ring(toolRing, crayon);
 
+    this.undoShown = null;
     this.undoButton = new BigButton(this, COLS[1], 440, { icon: '↩️', color: COLORS.sky, width: SWATCH, height: SWATCH, onTap: () => this.undo() });
     this.updateUndo();
     // Clearing everything needs a long press, so a stray tap can't wipe a drawing.
@@ -172,6 +180,8 @@ export class DrawScene extends MenuScene {
   }
 
   private updateUndo(): void {
+    if (this.undoShown === history.canUndo) return;
+    this.undoShown = history.canUndo;
     this.undoButton.setEnabled(history.canUndo);
   }
 
@@ -193,7 +203,9 @@ export class DrawScene extends MenuScene {
 
   /** Blank paper, on screen and on this iPad. Undo can't bring it back. */
   private clearAll(): void {
-    if (restoring) return;
+    // A drawing still loading is cancelled, so it can't reappear over the blank paper.
+    restoreId++;
+    restoring = false;
     this.stroke = null;
     this.ctx.fillStyle = PAPER;
     this.ctx.fillRect(0, 0, SIZE, SIZE);
