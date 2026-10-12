@@ -185,13 +185,21 @@ describe('game maps', () => {
     }
   });
 
-  it('has a home door in town, and tall grass on the route and at the pond', () => {
+  it('has a home door in town, and tall grass on the route, at the pond and in Alien Valley', () => {
     const town = parseMap(MAPS.town);
     expect(MAPS.town.home).toBeDefined();
     expect(town.tileAt(MAPS.town.home!.x, MAPS.town.home!.y)).toBe('door');
-    for (const id of ['route', 'pond']) {
+    for (const id of ['route', 'pond', 'valley']) {
       expect(MAPS[id].rows.join('')).toContain('"');
     }
+  });
+
+  it('reaches Alien Valley through the bottom of Sparkle Pond', () => {
+    const pond = parseMap(MAPS.pond);
+    const toValley = MAPS.pond.warps.filter((w) => w.to === 'valley');
+    expect(toValley.length).toBeGreaterThan(0);
+    for (const w of toValley) expect(w.y, 'on the bottom row').toBe(pond.height - 1);
+    expect(MAPS.valley.name).toBe('Alien Valley');
   });
 });
 

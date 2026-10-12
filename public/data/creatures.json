@@ -154,6 +154,25 @@
       "baseStats": { "hp": 45, "attack": 60, "defense": 45 },
       "moves": ["zoom-roll", "flame-dash"],
       "areas": ["route", "pond"]
+    },
+    {
+      "id": "torch-guy",
+      "name": "Torch Guy",
+      "type": "fire",
+      "image": "torch-guy.svg",
+      "baseStats": { "hp": 50, "attack": 55, "defense": 45 },
+      "moves": ["bonk", "spark"],
+      "areas": ["valley"]
+    },
+    {
+      "id": "shiny-torch-guy",
+      "name": "Shiny Torch Guy",
+      "type": "fire",
+      "image": "shiny-torch-guy.svg",
+      "baseStats": { "hp": 50, "attack": 55, "defense": 45 },
+      "moves": ["bonk", "spark"],
+      "areas": ["valley"],
+      "rare": true
     }
   ]
 }

@@ -1,4 +1,4 @@
-// The v1 world: home town, a grassy route, and a pond.
+// The world: home town, a grassy route, a pond, and Alien Valley south of the pond.
 // Legend: . path  , grass  " tall grass (wild creatures!)  F flowers  D door
 //         T tree  ~ water  # house  = fence
 
@@ -82,11 +82,38 @@ export const MAPS: Record<string, MapDef> = {
     'T."""""....."""""".T',
     'T..""".....""""....T',
     'T....F.........F...T',
-    'TTTTTTTTTTTTTTTTTTTT',
+    'TTTTTTTTT..TTTTTTTTT',
     ],
     warps: [
       { x: 0, y: 7, to: 'route', toX: 22, toY: 7 },
       { x: 0, y: 8, to: 'route', toX: 22, toY: 8 },
+      { x: 9, y: 14, to: 'valley', toX: 9, toY: 1 },
+      { x: 10, y: 14, to: 'valley', toX: 10, toY: 1 },
+    ],
+  },
+  valley: {
+    id: 'valley',
+    name: 'Alien Valley',
+    rows: [
+    'TTTTTTTTT..TTTTTTTTT',
+    'T..................T',
+    'T."""""......""""".T',
+    'T..""""..TT..""""..T',
+    'T..................T',
+    'T.TT....F....F..TT.T',
+    'T...""""""""""""...T',
+    'T..""""""""""""""..T',
+    'T...""""""""""""...T',
+    'T..................T',
+    'T.F..TT..~~~~..TT..T',
+    'T""""....~~~~..""""T',
+    'T"""""...........F.T',
+    'T..................T',
+    'TTTTTTTTTTTTTTTTTTTT',
+    ],
+    warps: [
+      { x: 9, y: 0, to: 'pond', toX: 9, toY: 13 },
+      { x: 10, y: 0, to: 'pond', toX: 10, toY: 13 },
     ],
   },
 };
@@ -98,4 +125,5 @@ export const START: Point & { map: string } = { map: 'town', x: 7, y: 5 };
 export const AREAS: Record<string, AreaEncounters> = {
   route: { chance: 0.15, minLevel: 2, maxLevel: 4 },
   pond: { chance: 0.15, minLevel: 3, maxLevel: 5 },
+  valley: { chance: 0.15, minLevel: 4, maxLevel: 6 },
 };

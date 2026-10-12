@@ -73,6 +73,14 @@ describe('speciesForArea', () => {
       expect(creatures.species.find((s) => s.id === id)?.rare, id).toBe(true);
     }
   });
+
+  it('lets only creatures that list Alien Valley live there', () => {
+    const creatures = validateCreatureData(shipped);
+    const pool = speciesForArea(creatures, 'valley');
+    expect(AREAS.valley).toBeDefined();
+    expect(pool.length).toBeGreaterThan(0);
+    for (const s of pool) expect(s.areas, s.id).toContain('valley');
+  });
 });
 
 describe('rollEncounter', () => {

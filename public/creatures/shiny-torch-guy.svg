@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+<ellipse cx="122" cy="142" rx="84" ry="88" fill="#2a2a2e" stroke="#000" stroke-width="5"/>
+<path d="M186 158 Q212 140 206 108" stroke="#8e1616" stroke-width="18" fill="none" stroke-linecap="round"/>
+<path d="M186 158 Q212 140 206 108" stroke="#e23b3b" stroke-width="10" fill="none" stroke-linecap="round"/>
+<path d="M206 112 C192 100 198 84 210 76 C210 88 222 88 220 100 C222 108 214 116 206 112Z" fill="#e23b3b" stroke="#8e1616" stroke-width="4" stroke-linejoin="round"/>
+<ellipse cx="128" cy="138" rx="72" ry="80" fill="#2f86e6" stroke="#144d8f" stroke-width="6"/>
+<path d="M98 74 C78 54 92 30 112 18 C110 36 122 38 130 26 C146 42 134 56 154 54 C162 70 150 82 138 84 C124 76 110 80 98 74Z" fill="#e23b3b" stroke="#8e1616" stroke-width="5" stroke-linejoin="round"/>
+<path d="M112 70 C104 58 110 46 118 40 C120 50 128 50 132 44 C138 56 132 66 124 70Z" fill="#5fb0ff"/>
+<path d="M66 168 L90 150 L106 176 L134 184 L148 206 M150 184 L176 172 L186 150 M80 110 L70 96 M176 104 L188 92" stroke="#ef3d3d" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<g id="face"><ellipse cx="106" cy="126" rx="18" ry="28" fill="#ffe14d" stroke="#fff" stroke-width="6"/><ellipse cx="150" cy="126" rx="18" ry="28" fill="#ffe14d" stroke="#fff" stroke-width="6"/><circle cx="109" cy="134" r="9" fill="#222"/><circle cx="147" cy="134" r="9" fill="#222"/><circle cx="112" cy="130" r="3.5" fill="#fff"/><circle cx="150" cy="130" r="3.5" fill="#fff"/></g>
+<circle cx="200" cy="216" r="15" fill="#e23b3b" stroke="#8e1616" stroke-width="4"/>
+<circle cx="196" cy="212" r="6" fill="#5fb0ff"/>
+<path d="M30 12 L35 25 L48 30 L35 35 L30 48 L25 35 L12 30 L25 25Z" fill="#fff59d" stroke="#e0a800" stroke-width="3" stroke-linejoin="round"/><path d="M214 12 L217 21 L226 24 L217 27 L214 36 L211 27 L202 24 L211 21Z" fill="#fff59d" stroke="#e0a800" stroke-width="3" stroke-linejoin="round"/><path d="M236 214 L239 223 L248 226 L239 229 L236 238 L233 229 L224 226 L233 223Z" fill="#fff59d" stroke="#e0a800" stroke-width="3" stroke-linejoin="round"/>
+</svg>

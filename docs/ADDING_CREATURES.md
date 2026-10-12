@@ -17,7 +17,8 @@ picture in `public/creatures/`. Adding a new one needs no code.
 2. Give Claude the screenshot or photo and a few details:
    - **Name** (for example, "Sparkle Kitty")
    - **Type:** 🔥 fire, 💧 water, or 🍃 leaf
-   - **Where it lives:** the Grassy Route, Sparkle Pond, or both
+   - **Where it lives:** the Grassy Route, Sparkle Pond, Alien Valley (south of
+     the pond, for the alien heroes), or more than one
    - Optional: is it strong, tough, or speedy? Any move names your child made up?
 3. Claude cleans up the drawing into a game picture, adds it to the game, runs
    the checks, and publishes it.
@@ -64,7 +65,7 @@ would replace a starter. Creatures with `"wild": false` are never starters.)
 | `image` | The file name from step 1 (must match exactly, including capital letters). |
 | `baseStats` | Whole numbers. Around 40–65 keeps things fair; higher is stronger. |
 | `moves` | Exactly two: one **normal** move and one move of the creature's own type. |
-| `areas` | `"route"`, `"pond"`, or both. Leave the line out to have it appear everywhere. |
+| `areas` | Any of `"route"`, `"pond"` and `"valley"` (Alien Valley). Always include it (unless `wild` is `false`): leaving it out would put the creature everywhere, Alien Valley too, and `npm run build` stops that (Alien Valley is only for the alien heroes). |
 | `wild` | Optional. `false` means it never appears in the tall grass. Leave out `areas` when you use it. Only an NPC can then give it to the kids (Super Shadehog is the Gold Kid's prize). A new NPC needs code (its entry in `src/logic/npcs.ts`, a spot in `src/data/maps.ts`, and a picture in `src/scenes/textures.ts`), so ask Claude. |
 | `rare` | Optional. `true` makes it half as likely to show up as a normal creature in the same grass (Shiny Zoomhog is rare at Sparkle Pond). Leave it out for a normal creature. |
 

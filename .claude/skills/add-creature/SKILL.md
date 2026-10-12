@@ -30,7 +30,7 @@ default marked (Recommended):
 |---|---|
 | Name | What the user called it |
 | Type | The emoji on the screenshot; for a shiny, the original's type |
-| Where it lives: `route` (Grassy Route), `pond` (Sparkle Pond), or both | A shiny lives where the original lives |
+| Where it lives: any of `route` (Grassy Route), `pond` (Sparkle Pond), `valley` (Alien Valley: the TV-show alien heroes, and nobody else) | A shiny lives where the original lives |
 | Rare (`"rare": true`, half as likely) | Shinies are rare; other creatures aren't |
 
 Then decide these yourself, without asking:
