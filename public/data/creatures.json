@@ -173,6 +173,25 @@
       "moves": ["bonk", "spark"],
       "areas": ["valley"],
       "rare": true
+    },
+    {
+      "id": "accelerator",
+      "name": "Accelerator",
+      "type": "water",
+      "image": "accelerator.svg",
+      "baseStats": { "hp": 45, "attack": 60, "defense": 45 },
+      "moves": ["zoom-roll", "wave-dash"],
+      "areas": ["valley"]
+    },
+    {
+      "id": "shiny-accelerator",
+      "name": "Shiny Accelerator",
+      "type": "water",
+      "image": "shiny-accelerator.svg",
+      "baseStats": { "hp": 45, "attack": 60, "defense": 45 },
+      "moves": ["zoom-roll", "wave-dash"],
+      "areas": ["valley"],
+      "rare": true
     }
   ]
 }
