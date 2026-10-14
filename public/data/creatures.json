@@ -211,6 +211,25 @@
       "moves": ["bump", "leaf-toss"],
       "areas": ["route", "pond"],
       "rare": true
+    },
+    {
+      "id": "rollout",
+      "name": "Rollout",
+      "type": "leaf",
+      "image": "rollout.svg",
+      "baseStats": { "hp": 50, "attack": 45, "defense": 60 },
+      "moves": ["zoom-roll", "vine-swing"],
+      "areas": ["valley"]
+    },
+    {
+      "id": "shiny-rollout",
+      "name": "Shiny Rollout",
+      "type": "leaf",
+      "image": "shiny-rollout.svg",
+      "baseStats": { "hp": 50, "attack": 45, "defense": 60 },
+      "moves": ["zoom-roll", "vine-swing"],
+      "areas": ["valley"],
+      "rare": true
     }
   ]
 }

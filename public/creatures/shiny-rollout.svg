@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+<path d="M138 92 L160 40 L184 78 L206 24" fill="none" stroke="#222" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="160" cy="150" r="84" fill="#3a3a3a" stroke="#111" stroke-width="6"/>
+<circle cx="164" cy="146" r="54" fill="#2e8de0" stroke="#17558f" stroke-width="5"/>
+<circle cx="164" cy="146" r="22" fill="#fff" stroke="#17558f" stroke-width="4"/>
+<ellipse cx="134" cy="212" rx="20" ry="13" fill="#2e8de0" stroke="#17558f" stroke-width="5"/>
+<ellipse cx="192" cy="212" rx="20" ry="13" fill="#2e8de0" stroke="#17558f" stroke-width="5"/>
+<path d="M36 108 C36 74 70 62 98 62 C126 62 160 74 160 108 L150 160 C140 200 116 222 98 222 C80 222 56 200 46 160 Z" fill="#f6f6f6" stroke="#555" stroke-width="6" stroke-linejoin="round"/>
+<path d="M39 114 C38 78 70 65 98 65 C126 65 158 78 157 114 Z" fill="#2e8de0" stroke="#17558f" stroke-width="5" stroke-linejoin="round"/>
+<rect x="44" y="110" width="108" height="44" rx="18" fill="#e53935" stroke="#8a1c1c" stroke-width="5"/>
+<ellipse cx="76" cy="132" rx="14" ry="16" fill="#fff"/><ellipse cx="120" cy="132" rx="14" ry="16" fill="#fff"/><circle cx="78" cy="135" r="8" fill="#222"/><circle cx="118" cy="135" r="8" fill="#222"/><circle cx="81" cy="131" r="3" fill="#fff"/><circle cx="121" cy="131" r="3" fill="#fff"/>
+<ellipse cx="64" cy="174" rx="10" ry="6" fill="#ff8fa3" opacity=".7"/><ellipse cx="132" cy="174" rx="10" ry="6" fill="#ff8fa3" opacity=".7"/>
+<path d="M84 178 q14 14 28 0" stroke="#222" stroke-width="5" fill="none" stroke-linecap="round"/>
+<path d="M30 12 L35 25 L48 30 L35 35 L30 48 L25 35 L12 30 L25 25Z" fill="#fff59d" stroke="#e0a800" stroke-width="3" stroke-linejoin="round"/><path d="M236 48 L239 57 L248 60 L239 63 L236 72 L233 63 L224 60 L233 57Z" fill="#fff59d" stroke="#e0a800" stroke-width="3" stroke-linejoin="round"/><path d="M24 220 L27 229 L36 232 L27 235 L24 244 L21 235 L12 232 L21 229Z" fill="#fff59d" stroke="#e0a800" stroke-width="3" stroke-linejoin="round"/>
+</svg>
