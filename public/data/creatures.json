@@ -192,6 +192,25 @@
       "moves": ["zoom-roll", "wave-dash"],
       "areas": ["valley"],
       "rare": true
+    },
+    {
+      "id": "punchidna",
+      "name": "Punchidna",
+      "type": "fire",
+      "image": "punchidna.svg",
+      "baseStats": { "hp": 50, "attack": 60, "defense": 45 },
+      "moves": ["bonk", "flame-dash"],
+      "areas": ["route", "pond"]
+    },
+    {
+      "id": "shiny-sproutle",
+      "name": "Shiny Sproutle",
+      "type": "leaf",
+      "image": "shiny-sproutle.svg",
+      "baseStats": { "hp": 55, "attack": 45, "defense": 55 },
+      "moves": ["bump", "leaf-toss"],
+      "areas": ["route", "pond"],
+      "rare": true
     }
   ]
 }
